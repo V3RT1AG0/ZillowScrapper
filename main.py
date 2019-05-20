@@ -3,16 +3,14 @@ import requests
 import re
 from selenium import webdriver
 import csv
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from tkinter import *
 import os
+import time
 
-# proxy = 'http://188.186.186.146:45121'
-#
-# os.environ['http_proxy'] = proxy
-# os.environ['HTTP_PROXY'] = proxy
-# os.environ['https_proxy'] = proxy
-# os.environ['HTTPS_PROXY'] = proxy
-
+proxy = '54.37.84.141:3128'
 key = "X1-ZWz1h1sdyiz9jf_6v82r"
 
 
@@ -92,6 +90,7 @@ class App:
     def __init__(self):
         self.req_headers = self.setHeaders()
         self.driver = self.setSeleniumDriver()
+        #self.driver.get("https://www.whatismyip.com/my-ip-information/")
         self.findLocation(22030)
 
     def setHeaders(self):
@@ -104,23 +103,143 @@ class App:
         }
 
     def setSeleniumDriver(self):
-        driver = webdriver.Chrome(executable_path='/usr/local/bin/chromedriver')
+
         options = webdriver.ChromeOptions()
+        options.add_argument('--proxy-server=%s' % proxy)
         options.add_argument('--ignore-certificate-errors')
         options.add_argument('--incognito')
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
+        driver = webdriver.Chrome(executable_path='/usr/local/bin/chromedriver', options=options)
         return driver
 
-    #def scrapeArticle(self):
+    def scrapeForSold(self, soup2, returndata):
+        cost_rent_string = returnString(soup2.find("div", {"class": "status"})) #regex get only numbers
+        returndata["cost/rent"] = re.sub('[^0-9]', '', cost_rent_string)
+        returndata["status"] = "Sold"
+        returndata["address"] = returnString(soup2.find("h1", {"class": "zsg-h1"}))
+        # finding all spans which gives bed bath and area
+        bed_bath_area = soup2.find("h3", {"class": "edit-facts-light"}).findAll("span",{"class": False})
+        print(bed_bath_area)
+        # assigning each value in a list to a its corresponding varaible
+        returndata["bed"], returndata["bath"], returndata["area"] = [span.text for span in bed_bath_area]
+        returndata["summary"] = returnString(soup2.find("div", {"class": "zsg-content-item home-description"}))
+        returndata["zestimate"] = returnString(soup2.find("span", {"class": "zestimate primary-quote"}))
+        #returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
+
+        facts = soup2.find("div", {"class": "home-facts-at-a-glance-section"}).find_all("div")
+        for fact in facts:
+            label = returnString(fact.find("div", {"class": "fact-label"}))
+            value = returnString(fact.find("div", {"class": "fact-value"}))
+            returndata[label] = value
+
+        # You might have try catch pass this whole history
+        try:
+            price_history = soup2.find("table", {"class":"zsg-table zsg-content-component"}).find_all(
+                "tr")
+            historyList = []
+            for hs in price_history[1:]:
+                hist = dict()
+                items = hs.contents
+                hist["date"] = returnString(items[0])
+                hist["event"] = returnString(items[1])
+                hist["price"] = returnString(items[2])
+                historyList.append(hist)
+            returndata["SaleHistory"] = historyList
+        except Exception as e:
+            print(e)
+            pass
+
+        # WRITING TO CSV FILE
+        keys = returndata.keys()
+        try:
+            with open('zillow.csv', 'a') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=keys)
+                # writer.writeheader()
+                writer.writerow(returndata)
+        except IOError:
+            print("I/O error")
+
+
+    def scrapeForSale(self,soup2,returndata):
+        returndata["cost/rent"] = returnString(soup2.find("span", {"class": "ds-value"}))
+        returndata["status"] = returnString(soup2.find("span", {"class": "ds-status-details"}))
+        returndata["address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
+        # finding all spans which gives bed bath and area
+        bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
+        print(bed_bath_area)
+        # assigning each value in a list to a its corresponding varaible
+        returndata["bed"], returndata["bath"], returndata["area"] = [row.span.text for row in bed_bath_area][:3]
+        returndata["summary"] = returnString(soup2.find("div", {"class": "character-count-text-fold-container"}))
+        returndata["zestimate"] = returnString(soup2.find("span", {"class": "ds-estimate-value"}))
+        #returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
+        facts = soup2.find("ul", {"class": "ds-home-fact-list"}).find_all("li")
+        for fact in facts:
+            label = returnString(fact.find("span", {"class": "ds-standard-label ds-home-fact-label"}))
+            value = returnString(fact.find("span", {"class": "ds-body ds-home-fact-value"}))
+            returndata[label] = value
+
+        # You might have try catch pass this whole history
+        price_history = soup2.find("table", {"class": "zsg-table ds-price-and-tax-section-table"}).find_all(
+            "tr")
+        historyList = []
+        for hs in price_history[1:]:
+            hist = dict()
+            items = hs.contents
+            hist["date"] = returnString(items[0])
+            hist["event"] = returnString(items[1])
+            hist["price"] = returnString(items[2])
+            historyList.append(hist)
+        returndata["SaleHistory"] = historyList
+
+        # WRITING TO CSV FILE
+        keys = returndata.keys()
+        try:
+            with open('zillow.csv', 'a') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=keys)
+                # writer.writeheader()
+                writer.writerow(returndata)
+        except IOError:
+            print("I/O error")
+
+    def scrapeArticle(self,result):
+        returndata = dict()
+
+        # use selenium to load individual house article
+        try:
+            houseurl = "https://www.zillow.com/homes/for_sale/" + result['data-zpid'] + "_zpid"
+            returndata["zipcode"] = result['data-zpid']
+        except KeyError as e:
+            houseurl = "https://www.zillow.com/homes/for_sale/" + result['id'][5:] + "_zpid"
+            returndata["zipcode"] = result['id'][5:]
+
+
+        self.driver.get(houseurl)
+        html = self.driver.page_source
+        soup2 = BeautifulSoup(html, 'lxml')
+        if soup2.find("span", {"class": "ds-status-details"}) is None:
+            self.driver.find_element_by_id("price-and-tax-history").click()
+            WebDriverWait(self.driver, 100).until(
+                EC.presence_of_element_located((By.ID, "hdp-price-history")))  # handle timeoutexceptio 100seconds
+            html = self.driver.page_source
+            soup2 = BeautifulSoup(html, 'lxml')
+            self.scrapeForSold(soup2, returndata)
+        else:
+            self.scrapeForSale(soup2, returndata)
+
+
+        #list.append(returndata)
+        # self.driver.close()
+        # print(list)
 
     def findLocation(self, zip):
         # get webpage and create soup
         with requests.Session() as s:
-            url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
+            url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
+            #url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
             r = s.get(url, headers=self.req_headers)
+            print(url)
         soup = BeautifulSoup(r.content, 'lxml')
-        list = []
-
+        #list = []
 
         # get number of pages
         pages = returnString(soup.find("li", {"class", "zsg-pagination-next"}).previous_sibling)
@@ -131,7 +250,8 @@ class App:
 
             #make a request for that particular page and create soup for that page
             with requests.Session() as s:
-                url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb/" + str(page) + "_p"
+                url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
+                #url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb/" + str(page) + "_p"
                 r = s.get(url, headers=self.req_headers)
             soup = BeautifulSoup(r.content, 'lxml')
             cards = soup.find("ul", {"class": "photo-cards"})
@@ -140,64 +260,7 @@ class App:
             results = cards.find_all("article")
             for result in results:
                 print(result)
-                returndata = dict()
-
-                #use selenium to load individual house article
-                try:
-                    houseurl = "https://www.zillow.com/homes/for_sale/" + result['data-zpid'] + "_zpid"
-                    returndata["zipcode"] = result['data-zpid']
-                except KeyError as e:
-                    houseurl = "https://www.zillow.com/homes/for_sale/" + result['id'][5:] + "_zpid"
-                    returndata["zipcode"] = result['id'][5:]
-                self.driver.get(houseurl)
-                html = self.driver.page_source
-
-                self.scrapeArticle()
-                soup2 = BeautifulSoup(html, 'lxml')
-                returndata["cost/rent"] = returnString(soup2.find("span", {"class": "ds-value"}))
-                returndata["status"] = returnString(soup2.find("span",{"class":"ds-status-details"}))
-                returndata["address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
-                #finding all spans which gives bed bath and area
-                bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
-                print(bed_bath_area)
-                # assigning each value in a list to a its corresponding varaible
-                returndata["bed"],returndata["bath"],returndata["area"] = [row.span.text for row in bed_bath_area][:3]
-                returndata["summary"] = returnString(soup2.find("div", {"class": "character-count-text-fold-container"}))
-                returndata["zestimate"] = returnString(soup2.find("span", {"class": "ds-estimate-value"}))
-                returndata["Principal/Interest"] = returnString(soup2.find("span",text='Principal & interest').next_sibling)
-                facts = soup2.find("ul", {"class": "ds-home-fact-list"}).find_all("li")
-                for fact in facts:
-                    label = returnString(fact.find("span", {"class": "ds-standard-label ds-home-fact-label"}))
-                    value = returnString(fact.find("span", {"class": "ds-body ds-home-fact-value"}))
-                    returndata[label] = value
-
-
-                # You might have try catch pass this whole history
-                price_history = soup2.find("table", {"class": "zsg-table ds-price-and-tax-section-table"}).find_all(
-                    "tr")
-                historyList = []
-                for hs in price_history[1:]:
-                    hist = dict()
-                    items = hs.contents
-                    hist["date"] = returnString(items[0])
-                    hist["event"] = returnString(items[1])
-                    hist["price"] = returnString(items[2])
-                    historyList.append(hist)
-                returndata["SaleHistory"] = historyList
-
-                # WRITING TO CSV FILE
-                keys = returndata.keys()
-                try:
-                    with open('zillow.csv', 'a') as csvfile:
-                        writer = csv.DictWriter(csvfile, fieldnames=keys)
-                        # writer.writeheader()
-                        writer.writerow(returndata)
-                except IOError:
-                    print("I/O error")
-                list.append(returndata)
-                # self.driver.close()
-                # print(list)
-            #print(list)
+                self.scrapeArticle(result)
 
 
 # CODE TO FETCH DATA USING API INSTEAD OF SCRAPING IT FROM WEBSITE
@@ -230,4 +293,4 @@ if __name__ == "__main__":
 
 # zillow url parameters:- /0_mmm - show only for sale items
 #https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/
-# 1_fr,1_rs
+# 1_fr,1_rs,11_zm
