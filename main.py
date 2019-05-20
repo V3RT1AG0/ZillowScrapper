@@ -10,7 +10,7 @@ from tkinter import *
 import os
 import time
 
-proxy = '54.37.84.141:3128'
+proxy = '5.152.238.9:60826'
 key = "X1-ZWz1h1sdyiz9jf_6v82r"
 
 
@@ -19,6 +19,13 @@ def returnString(data):
         return ""
     else:
         return data.get_text().strip()
+
+
+def return_number(data):
+    if data is None:
+        return ""
+    else:
+        return re.sub('[^0-9]', '', returnString(data))
 
 
 # Api call
@@ -113,17 +120,16 @@ class App:
         return driver
 
     def scrapeForSold(self, soup2, returndata):
-        cost_rent_string = returnString(soup2.find("div", {"class": "status"})) #regex get only numbers
-        returndata["cost/rent"] = re.sub('[^0-9]', '', cost_rent_string)
+        returndata["cost/rent"] = return_number(soup2.find("div", {"class": "status"}))
         returndata["status"] = "Sold"
         returndata["address"] = returnString(soup2.find("h1", {"class": "zsg-h1"}))
         # finding all spans which gives bed bath and area
         bed_bath_area = soup2.find("h3", {"class": "edit-facts-light"}).findAll("span",{"class": False})
         print(bed_bath_area)
         # assigning each value in a list to a its corresponding varaible
-        returndata["bed"], returndata["bath"], returndata["area"] = [span.text for span in bed_bath_area]
+        returndata["bed"], returndata["bath"], returndata["area"] = [return_number(span) for span in bed_bath_area]
         returndata["summary"] = returnString(soup2.find("div", {"class": "zsg-content-item home-description"}))
-        returndata["zestimate"] = returnString(soup2.find("span", {"class": "zestimate primary-quote"}))
+        returndata["zestimate"] = return_number(soup2.find("div", {"class": "zestimate primary-quote"}))
         #returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
 
         facts = soup2.find("div", {"class": "home-facts-at-a-glance-section"}).find_all("div")
@@ -154,7 +160,7 @@ class App:
         try:
             with open('zillow.csv', 'a') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=keys)
-                # writer.writeheader()
+                writer.writeheader()
                 writer.writerow(returndata)
         except IOError:
             print("I/O error")
@@ -168,7 +174,7 @@ class App:
         bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
         print(bed_bath_area)
         # assigning each value in a list to a its corresponding varaible
-        returndata["bed"], returndata["bath"], returndata["area"] = [row.span.text for row in bed_bath_area][:3]
+        returndata["bed"], returndata["bath"], returndata["area"] = [return_number(row.span) for row in bed_bath_area][:3]
         returndata["summary"] = returnString(soup2.find("div", {"class": "character-count-text-fold-container"}))
         returndata["zestimate"] = returnString(soup2.find("span", {"class": "ds-estimate-value"}))
         #returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
@@ -196,7 +202,7 @@ class App:
         try:
             with open('zillow.csv', 'a') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=keys)
-                # writer.writeheader()
+                writer.writeheader()
                 writer.writerow(returndata)
         except IOError:
             print("I/O error")
@@ -217,6 +223,8 @@ class App:
         html = self.driver.page_source
         soup2 = BeautifulSoup(html, 'lxml')
         if soup2.find("span", {"class": "ds-status-details"}) is None:
+            WebDriverWait(self.driver, 100).until(
+                EC.presence_of_element_located((By.ID, "price-and-tax-history")))
             self.driver.find_element_by_id("price-and-tax-history").click()
             WebDriverWait(self.driver, 100).until(
                 EC.presence_of_element_located((By.ID, "hdp-price-history")))  # handle timeoutexceptio 100seconds
@@ -235,6 +243,7 @@ class App:
         # get webpage and create soup
         with requests.Session() as s:
             url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
+            #https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             #url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
             r = s.get(url, headers=self.req_headers)
             print(url)
