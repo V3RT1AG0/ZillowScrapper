@@ -15,7 +15,12 @@ def combineCSV():
 
 def read_ZipCodesFoState(state):
     data = pd.read_csv("./All_Zip.csv")
-    return data[data.state == state]["zip"].tolist()
+    zip_list = data[data.state == state]["zip"].tolist()
+    if len(zip_list) == 0:
+        raise ValueError("Invalid state code")
+    else:
+        return zip_list
+
 
 def read_visited_zipCode(state):
     with open('visited_zip.json') as json_file:
