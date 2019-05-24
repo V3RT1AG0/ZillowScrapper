@@ -70,5 +70,3 @@ def write_to_csv(data):
         print("I/O error")
 
     insert_article(data)
-
-#page 12 pending

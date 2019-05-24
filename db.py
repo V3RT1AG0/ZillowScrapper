@@ -1,8 +1,8 @@
 from pymongo import MongoClient
 
 client = MongoClient('localhost', 27017)
-db = client['zillow']
-collection = db['Houses3']
+db = client['zillow'] #NAME OF DATABASE
+collection = db['Houses3'] #NAME OF COLLECTION
 print("MongoDB connected...")
 
 #post = {"id":1,"name":"asdsad"}
