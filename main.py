@@ -7,11 +7,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from tkinter import *
-from db import insert_article
+from db import insert_article,check_if_zid_already_exist
 import json
 import os
 import time
 from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code
+
+
+# from pyvirtualdisplay import Display
+# display = Display(visible=0, size=(1366, 768))
+# display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -229,6 +234,10 @@ class App:
             returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
+        if check_if_zid_already_exist(returndata["zid"]) is not None:
+            print("zid: " + returndata["zid"] + " already exist in db")
+            return
+
         print("Fetching..."+houseurl)
         try:
             self.driver.get(houseurl)
@@ -305,7 +314,9 @@ class App:
             pages = 1
 
         # itereate over each page
-        for page in range(1, int(pages) + 1):
+        # for page in range(1, int(pages) + 1):
+        page = 1
+        while page < int(pages)+1:
             print("PAGE:" + str(page))
 
             # make a request for that particular page and create soup for that page
@@ -318,6 +329,9 @@ class App:
             soup = BeautifulSoup(r.content, 'lxml')
 
             cards = soup.find("ul", {"class": "photo-cards"})
+            if cards is None:
+                continue
+
             if cards["class"] == ["photo-cards"]:
                 results = cards.find_all("article")
                 card_type = 1
@@ -331,6 +345,7 @@ class App:
             for result in results:
                 self.scrapeArticle(result, card_type)
 
+            page += 1
 
 
 
@@ -350,13 +365,6 @@ if __name__ == "__main__":
     # btn.grid(column=1, row=1)
     # lbl.grid(column=0, row=0)
     # window.mainloop()
-
-# HOW TO RUN THIS FILE:
-# 1. INSTALL CHROME VERSION 74.X
-# 2. SET UP PYTHON VIRTUAL ENVIORNMENT AND INSTALL ALL DEPENDENCIES USING THE FOLLOWING COMMAND: pip install -r requirements.txt
-# 3. SET UP MONGODB (SEE DB.PY) FOR SETTINGS
-# 4. RUN THE CODE AND ENTER THE STATE CODE FOR WHICH YOU WANT TO FETCH THE DATA FOR IN THE PROGRAM RUNNING
-# 5. THE DATA WILL BE COLLECTED IN MONGODB.
 
 # zillow url parameters:- /0_mmm - show only for sale items
 # https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/

@@ -1,6 +1,6 @@
 import pandas as pd
 import csv
-from db import insert_article
+from db import insert_article_without_upsert
 import json
 
 
@@ -69,4 +69,4 @@ def write_to_csv(data):
     except IOError:
         print("I/O error")
 
-    insert_article(data)
+    insert_article_without_upsert(data)
