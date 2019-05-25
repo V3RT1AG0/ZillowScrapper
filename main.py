@@ -11,7 +11,7 @@ from db import insert_article,check_if_zid_already_exist
 import json
 import os
 import time
-from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code
+from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code,remove_zip_code
 
 
 # from pyvirtualdisplay import Display
@@ -46,8 +46,19 @@ class App:
         for zipcode in self.get_zip_codes(state):
             self.current_zipcode = str(zipcode)
             self.current_state = state
-            self.find_articles_by_zip(str(zipcode))
             write_visited_zip_code(state, zipcode)
+            try:
+                self.find_articles_by_zip(str(zipcode))
+            except KeyboardInterrupt:
+                print("KeyBoardInterupt. Removing zipcode..")
+                remove_zip_code(state,zipcode)
+                return
+            except Exception:
+                print("Exception at top level. Removing zipcode..")
+                remove_zip_code(state, zipcode)
+                return
+
+
 
         # self.find_articles_by_state
 
@@ -281,7 +292,6 @@ class App:
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSale(soup2, returndata)
         except TimeoutException as e:
-            print(soup2.prettify())
             print("Timeout exception while waiting for element")
         except Exception as e:
             logger.error("exception " + repr(e) + " for url " + houseurl)

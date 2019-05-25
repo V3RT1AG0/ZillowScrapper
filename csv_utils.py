@@ -43,7 +43,7 @@ def write_visited_zip_code(state,zipCode):
 def get_unvisited_zip(state):
     all = read_ZipCodesFoState(state)
     visited = read_visited_zipCode(state)
-    unvisited = [ l for l in all if l not in visited]
+    unvisited = [ zip for zip in all if zip not in visited]
     return unvisited
 
 def write_to_csv(data):
@@ -70,3 +70,17 @@ def write_to_csv(data):
         print("I/O error")
 
     insert_article_without_upsert(data)
+
+
+def remove_zip_code(state,zipCode):
+    with open('visited_zip.json') as json_file:
+        data = json.load(json_file)
+
+    try:
+        data[state].remove(zipCode)
+    except Exception as e:
+        print("Unable to remove zip"+zipCode)
+        return
+
+    with open('visited_zip.json', 'w') as outfile:
+        json.dump(data, outfile)

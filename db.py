@@ -1,8 +1,8 @@
 from pymongo import MongoClient
 
-client = MongoClient('localhost', 27017)
-db = client['zillow'] #NAME OF DATABASE
-collection = db['Houses3'] #NAME OF COLLECTION
+client = MongoClient('localhost', 27018)
+db = client['Zillow'] #NAME OF DATABASE
+collection = db['House'] #NAME OF COLLECTION
 print("MongoDB connected...")
 
 #post = {"id":1,"name":"asdsad"}
@@ -18,4 +18,4 @@ def check_if_zid_already_exist(zid):
 
 def insert_article_without_upsert(article):
     post_id = collection.insert_one(article)
-    print("Inserted data with post id" + str(post_id))
+    print("Inserted data with post id " + str(post_id))
