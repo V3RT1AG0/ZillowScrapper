@@ -53,10 +53,9 @@ class App:
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state,zipcode)
                 return
-            except Exception:
-                print("Exception at top level. Removing zipcode..")
+            except Exception as e:
                 remove_zip_code(state, zipcode)
-                return
+                raise e
 
 
 
