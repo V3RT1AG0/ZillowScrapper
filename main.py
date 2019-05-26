@@ -14,9 +14,9 @@ import time
 from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code,remove_zip_code
 
 
-# from pyvirtualdisplay import Display
-# display = Display(visible=0, size=(1366, 768))
-# display.start()
+from pyvirtualdisplay import Display
+display = Display(visible=0, size=(1366, 768))
+display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -281,9 +281,9 @@ class App:
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSold(soup2, returndata)
             else:
-                WebDriverWait(self.driver, 20).until(
+                WebDriverWait(self.driver, 35).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
-                WebDriverWait(self.driver, 20).until(
+                WebDriverWait(self.driver, 35).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-price-and-tax-section-table")))
                 #HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
                 #SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
@@ -352,8 +352,11 @@ class App:
 
             # print(results)
             for result in results:
-                self.scrapeArticle(result, card_type)
-
+                try:
+                    self.scrapeArticle(result, card_type)
+                except Exception as e:
+                    logger.error(repr(e) + "exception occoured while handling a zid. Moving to next zid....")
+                    continue
             page += 1
 
 
