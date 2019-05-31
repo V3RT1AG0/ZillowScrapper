@@ -4,14 +4,14 @@ from db import insert_article_without_upsert
 import json
 
 
-
 def combineCSV():
     sell = pd.read_csv("./sell.csv")
     rent = pd.read_csv("./rent.csv")
     auction = pd.read_csv("./auction.csv")
-    combined = pd.concat([sell, rent,auction], sort=False)
+    combined = pd.concat([sell, rent, auction], sort=False)
     combined = combined.reset_index(drop=True)
     combined.to_csv("./new5.csv")
+
 
 def read_ZipCodesFoState(state):
     data = pd.read_csv("./All_Zip.csv")
@@ -25,10 +25,13 @@ def read_ZipCodesFoState(state):
 def read_visited_zipCode(state):
     with open('visited_zip.json') as json_file:
         data = json.load(json_file)
-        return data[state]
+        try:
+            return data[state]
+        except KeyError:
+            return []
 
 
-def write_visited_zip_code(state,zipCode):
+def write_visited_zip_code(state, zipCode):
     with open('visited_zip.json') as json_file:
         data = json.load(json_file)
 
@@ -40,11 +43,13 @@ def write_visited_zip_code(state,zipCode):
     with open('visited_zip.json', 'w') as outfile:
         json.dump(data, outfile)
 
+
 def get_unvisited_zip(state):
     all = read_ZipCodesFoState(state)
     visited = read_visited_zipCode(state)
-    unvisited = [ zip for zip in all if zip not in visited]
+    unvisited = [zip for zip in all if zip not in visited]
     return unvisited
+
 
 def write_to_csv(data):
     print(data)
@@ -59,7 +64,6 @@ def write_to_csv(data):
     else:
         filename = "auction.csv"
 
-
     keys = data.keys()
     try:
         with open(filename, 'a') as csvfile:
@@ -72,14 +76,14 @@ def write_to_csv(data):
     insert_article_without_upsert(data)
 
 
-def remove_zip_code(state,zipCode):
+def remove_zip_code(state, zipCode):
     with open('visited_zip.json') as json_file:
         data = json.load(json_file)
 
     try:
         data[state].remove(zipCode)
     except Exception as e:
-        print("Unable to remove zip"+zipCode)
+        print("Unable to remove zip" + zipCode)
         return
 
     with open('visited_zip.json', 'w') as outfile:

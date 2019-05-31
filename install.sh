@@ -6,5 +6,11 @@ apt-get update
 apt-get install google-chrome-stable -y
 apt-get install xvfb -y
 apt-get install screen -y
-pip install -r requirements.txt
+apt-get install python3-pip -y
+apt-get install python3-pip -y
+virtualenv -p /usr/bin/python3 py3env
+source py3env/bin/activate
+pip install package-name
+pip3 install -U setuptools
+pip3 install -r requirements.txt
 #etc.
