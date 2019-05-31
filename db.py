@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-client = MongoClient('localhost', 27018)
+client = MongoClient('129.174.126.176', 27018)
 db = client['Zillow'] #NAME OF DATABASE
 collection = db['House'] #NAME OF COLLECTION
 print("MongoDB connected...")

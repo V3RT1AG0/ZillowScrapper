@@ -43,12 +43,13 @@ class App:
         self.driver = self.setSeleniumDriver()
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
         state = input("Enter State Code:")
-        for zipcode in self.get_zip_codes(state):
+        zipcode =  self.get_zip_codes(state)[0]
+        while zipcode is not None:
             self.current_zipcode = str(zipcode)
             self.current_state = state
             write_visited_zip_code(state, zipcode)
             try:
-                self.find_articles_by_zip(str(zipcode))
+                self.find_articles_by_zip(str(zipcode)) #22312
             except KeyboardInterrupt:
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state,zipcode)
@@ -56,6 +57,7 @@ class App:
             except Exception as e:
                 remove_zip_code(state, zipcode)
                 raise e
+            zipcode = self.get_zip_codes(state)[0]
 
 
 
@@ -104,7 +106,7 @@ class App:
 
         ############
         # options.add_argument('--disable-gpu')
-        # options.add_argument('--no-sandbox')
+        options.add_argument('--no-sandbox')
         # options.add_argument("start-maximized")
         # options.add_argument("disable-infobars")
         # options.add_argument("--disable-extensions")
@@ -210,7 +212,7 @@ class App:
         # WRITING TO CSV FILE
         write_to_csv(returndata)
 
-    def scrapeArticle(self, result, type):
+    def scrapeArticle(self, result, type,retry=0):
         returndata = dict()
 
         # use selenium to load individual house article
@@ -266,7 +268,8 @@ class App:
             print("Error window or bot detected")
             self.driver.quit()
             self.driver = self.setSeleniumDriver()
-            self.scrapeArticle(result, type)
+            if retry == 0:
+                self.scrapeArticle(result, type,1)
             return
 
         try:
@@ -281,9 +284,9 @@ class App:
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSold(soup2, returndata)
             else:
-                WebDriverWait(self.driver, 35).until(
+                WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
-                WebDriverWait(self.driver, 35).until(
+                WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-price-and-tax-section-table")))
                 #HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
                 #SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
@@ -292,6 +295,16 @@ class App:
                 self.scrapeForSale(soup2, returndata)
         except TimeoutException as e:
             print("Timeout exception while waiting for element")
+
+            #EXPERIMENTAL CHANGES#
+            if retry == 0:
+                self.scrapeArticle(result, type, 1)
+            else:
+                self.driver.quit()
+                self.driver = self.setSeleniumDriver()
+            #self.scrapeArticle(result, type)
+            #EXPERIMENTAL CHANGES
+            pass
         except Exception as e:
             logger.error("exception " + repr(e) + " for url " + houseurl)
             pass
