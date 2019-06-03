@@ -352,6 +352,7 @@ class App:
 
             cards = soup.find("ul", {"class": "photo-cards"})
             if cards is None:
+                page += 1
                 continue
 
             if cards["class"] == ["photo-cards"]:
