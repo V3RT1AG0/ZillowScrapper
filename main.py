@@ -39,6 +39,7 @@ def return_number(data):
 class App:
 
     def __init__(self):
+        self.proxyDict = {}
         self.req_headers = self.setHeaders()
         self.driver = self.setSeleniumDriver()
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
@@ -93,6 +94,10 @@ class App:
 
     def setSeleniumDriver(self):
         proxy = self.rotate_ip()
+        self.proxyDict = {
+            "http": proxy,
+            "https": proxy,
+        }
         options = webdriver.ChromeOptions()
         # options.addExtensions(new File("C:\\whatever\\Block-image_v1.0.crx"))
         options.add_argument('--proxy-server=%s' % proxy)
@@ -321,9 +326,14 @@ class App:
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
-            r = s.get(url, headers=self.req_headers)
+            r = s.get(url, headers=self.req_headers,proxies=self.proxyDict)
 
         soup = BeautifulSoup(r.content, 'lxml')
+        if self.check_recaptcha(soup):
+            self.driver.quit()
+            self.driver = self.setSeleniumDriver()
+            self.find_articles_by_zip(zip)
+            return
         #print(soup.prettify())
 
         print(returnString(soup.find("title")))
@@ -347,7 +357,7 @@ class App:
                 url = "https://www.zillow.com/homes/" + str(
                     zip) + "_rb/house_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
                 print(url)
-                r = s.get(url, headers=self.req_headers)
+                r = s.get(url, headers=self.req_headers,proxies=self.proxyDict)
 
             soup = BeautifulSoup(r.content, 'lxml')
 
