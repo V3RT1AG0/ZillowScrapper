@@ -324,6 +324,7 @@ class App:
             r = s.get(url, headers=self.req_headers)
 
         soup = BeautifulSoup(r.content, 'lxml')
+        print(soup.prettify())
 
         print(returnString(soup.find("title")))
         if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
