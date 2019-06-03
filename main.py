@@ -324,7 +324,7 @@ class App:
             r = s.get(url, headers=self.req_headers)
 
         soup = BeautifulSoup(r.content, 'lxml')
-        print(soup.prettify())
+        #print(soup.prettify())
 
         print(returnString(soup.find("title")))
         if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
@@ -353,8 +353,12 @@ class App:
 
             cards = soup.find("ul", {"class": "photo-cards"})
             if cards is None:
-                page += 1
-                continue
+                if self.check_recaptcha(soup):
+                    self.driver.quit()
+                    self.driver = self.setSeleniumDriver()
+                    continue
+                else:
+                    continue
 
             if cards["class"] == ["photo-cards"]:
                 results = cards.find_all("article")
