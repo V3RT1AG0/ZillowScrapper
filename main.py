@@ -12,7 +12,6 @@ import json
 import os
 import time
 from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, remove_zip_code
-from proxy_requests import ProxyRequests
 
 from pyvirtualdisplay import Display
 display = Display(visible=0, size=(1366, 768))
