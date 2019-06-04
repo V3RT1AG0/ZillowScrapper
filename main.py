@@ -7,12 +7,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from tkinter import *
-from db import insert_article,check_if_zid_already_exist
+from db import insert_article, check_if_zid_already_exist
 import json
 import os
 import time
-from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code,remove_zip_code
-
+from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, remove_zip_code
+from proxy_requests import ProxyRequests
 
 from pyvirtualdisplay import Display
 display = Display(visible=0, size=(1366, 768))
@@ -20,7 +20,6 @@ display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
-
 
 
 def returnString(data):
@@ -36,31 +35,31 @@ def return_number(data):
     else:
         return re.sub('[^0-9]', '', returnString(data))
 
+
 class App:
 
     def __init__(self):
         self.proxyDict = {}
         self.req_headers = self.setHeaders()
+        self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
         state = input("Enter State Code:")
-        zipcode =  self.get_zip_codes(state)[0]
+        zipcode = self.get_zip_codes(state)[0]
         while zipcode is not None:
             self.current_zipcode = str(zipcode)
             self.current_state = state
             write_visited_zip_code(state, zipcode)
             try:
-                self.find_articles_by_zip(str(zipcode)) #22312
+                self.find_articles_by_zip(str(zipcode))  # 22312
             except KeyboardInterrupt:
                 print("KeyBoardInterupt. Removing zipcode..")
-                remove_zip_code(state,zipcode)
+                remove_zip_code(state, zipcode)
                 return
             except Exception as e:
                 remove_zip_code(state, zipcode)
                 raise e
             zipcode = self.get_zip_codes(state)[0]
-
-
 
         # self.find_articles_by_state
 
@@ -75,6 +74,7 @@ class App:
         else:
             print("Bot detected..")
             return True
+
 
     def rotate_ip(self):
         proxyRotatorUrl = "http://falcon.proxyrotator.com:51337/?apiKey=" + proxyKey + "&get=true"
@@ -94,10 +94,6 @@ class App:
 
     def setSeleniumDriver(self):
         proxy = self.rotate_ip()
-        print("http://"+proxy)
-        self.proxyDict = {
-            "http": "http://"+proxy
-        }
         options = webdriver.ChromeOptions()
         # options.addExtensions(new File("C:\\whatever\\Block-image_v1.0.crx"))
         options.add_argument('--proxy-server=%s' % proxy)
@@ -107,7 +103,7 @@ class App:
         options.add_argument("--disable-popup-blocking")
         options.add_argument("--incognito")
         options.add_argument("--window-size=1440, 900")
-        #options.add_argument('--headless')
+        # options.add_argument('--headless')
 
         ############
         # options.add_argument('--disable-gpu')
@@ -116,7 +112,6 @@ class App:
         # options.add_argument("disable-infobars")
         # options.add_argument("--disable-extensions")
         ###########
-
 
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
@@ -217,7 +212,7 @@ class App:
         # WRITING TO CSV FILE
         write_to_csv(returndata)
 
-    def scrapeArticle(self, result, type,retry=0):
+    def scrapeArticle(self, result, type, retry=0):
         returndata = dict()
 
         # use selenium to load individual house article
@@ -255,7 +250,7 @@ class App:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
-        print("Fetching..."+houseurl)
+        print("Fetching..." + houseurl)
         try:
             self.driver.get(houseurl)
         except TimeoutException:
@@ -274,7 +269,7 @@ class App:
             self.driver.quit()
             self.driver = self.setSeleniumDriver()
             if retry == 0:
-                self.scrapeArticle(result, type,1)
+                self.scrapeArticle(result, type, 1)
             return
 
         try:
@@ -292,23 +287,24 @@ class App:
                 WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
                 WebDriverWait(self.driver, 25).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "ds-price-and-tax-section-table")))
-                #HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
-                #SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
+                    EC.presence_of_element_located(
+                        (By.CLASS_NAME, "ds-price-and-tax-section-table")))
+                # HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
+                # SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
                 html = self.driver.page_source
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSale(soup2, returndata)
         except TimeoutException as e:
             print("Timeout exception while waiting for element")
 
-            #EXPERIMENTAL CHANGES#
+            # EXPERIMENTAL CHANGES#
             if retry == 0:
                 self.scrapeArticle(result, type, 1)
             else:
                 self.driver.quit()
                 self.driver = self.setSeleniumDriver()
-            #self.scrapeArticle(result, type)
-            #EXPERIMENTAL CHANGES
+            # self.scrapeArticle(result, type)
+            # EXPERIMENTAL CHANGES
             pass
         except Exception as e:
             logger.error("exception " + repr(e) + " for url " + houseurl)
@@ -317,8 +313,17 @@ class App:
     def find_articles_by_state(self):
         self.find_articles_by_zip("Dallas-TX")
 
-    def find_articles_by_zip(self, zip):
+    def handle_fetch_cards_exception(self):
+        logger.error("Setting up new proxy for fetching cards...")
+        self.cards_proxy = self.rotate_ip()
+        print("http://" + self.cards_proxy)
+        self.proxyDict = {
+            "http": "http://" + self.cards_proxy,
+            "https": "http://" + self.cards_proxy
+        }
 
+
+    def find_articles_by_zip(self, zip):
         # get webpage and create soup
         with requests.Session() as s:
             url = "https://www.zillow.com/homes/" + str(
@@ -326,15 +331,28 @@ class App:
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
-            r = s.get(url, headers=self.req_headers,proxies=self.proxyDict)
+            # r = s.get(url, headers=self.req_headers)
+            # self.driver.get("http://www.showmemyip.com/")
+            # self.pxy = "183.87.12.209:8080"
+            # os.environ['http_proxy'] = self.pxy
+            # os.environ['HTTP_PROXY'] = self.pxy
+            # os.environ['https_proxy'] = self.pxy
+            # os.environ['HTTPS_PROXY'] = self.pxy
+            try:
+                r = s.get(url, proxies=self.proxyDict, timeout=10.0, headers=self.req_headers)
+            except Exception as e:
+                print(str(e))
+                self.handle_fetch_cards_exception()
+                self.find_articles_by_zip(zip)
+                return
 
-        soup = BeautifulSoup(r.content, 'lxml')
+        #print(r.text)
+        soup = BeautifulSoup(r.text, 'lxml')
         if self.check_recaptcha(soup):
-            self.driver.quit()
-            self.driver = self.setSeleniumDriver()
+            self.handle_fetch_cards_exception()
             self.find_articles_by_zip(zip)
             return
-        #print(soup.prettify())
+        # print(soup.prettify())
 
         print(returnString(soup.find("title")))
         if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
@@ -349,7 +367,7 @@ class App:
         # itereate over each page
         # for page in range(1, int(pages) + 1):
         page = 1
-        while page < int(pages)+1:
+        while page < int(pages) + 1:
             print("PAGE:" + str(page))
 
             # make a request for that particular page and create soup for that page
@@ -357,17 +375,23 @@ class App:
                 url = "https://www.zillow.com/homes/" + str(
                     zip) + "_rb/house_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
                 print(url)
-                r = s.get(url, headers=self.req_headers,proxies=self.proxyDict)
+                try:
+                    r = s.get(url, proxies=self.proxyDict, timeout=10.0, headers=self.req_headers)
+                except Exception as e:
+                    print(str(e))
+                    self.handle_fetch_cards_exception()
+                    continue
+
 
             soup = BeautifulSoup(r.content, 'lxml')
 
             cards = soup.find("ul", {"class": "photo-cards"})
             if cards is None:
                 if self.check_recaptcha(soup):
-                    self.driver.quit()
-                    self.driver = self.setSeleniumDriver()
+                    self.handle_fetch_cards_exception()
                     continue
                 else:
+                    page += 1
                     continue
 
             if cards["class"] == ["photo-cards"]:
@@ -384,11 +408,10 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
-                    logger.error(repr(e) + "exception occoured while handling a zid. Moving to next zid....")
+                    logger.error(
+                        repr(e) + "exception occoured while handling a zid. Moving to next zid....")
                     continue
             page += 1
-
-
 
 
 if __name__ == "__main__":
@@ -410,4 +433,3 @@ if __name__ == "__main__":
 # zillow url parameters:- /0_mmm - show only for sale items
 # https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/
 # 1_fr,1_rs,11_zm
-
