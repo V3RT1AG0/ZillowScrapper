@@ -94,9 +94,9 @@ class App:
 
     def setSeleniumDriver(self):
         proxy = self.rotate_ip()
+        print("http://"+proxy)
         self.proxyDict = {
-            "http": proxy,
-            "https": proxy,
+            "http": "http://"+proxy
         }
         options = webdriver.ChromeOptions()
         # options.addExtensions(new File("C:\\whatever\\Block-image_v1.0.crx"))
