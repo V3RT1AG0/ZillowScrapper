@@ -15,6 +15,7 @@ from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, r
 import multiprocessing
 
 from pyvirtualdisplay import Display
+
 display = Display(visible=0, size=(1366, 768))
 display.start()
 
@@ -231,8 +232,8 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 248")
                 return
-            # returndata["latitude"] = float(result["data-latitude"])/1000000
-            # returndata["longitude"] = float(result["data-longitude"])/1000000
+            returndata["latitude"] = float(result["data-latitude"]) / 1000000
+            returndata["longitude"] = float(result["data-longitude"]) / 1000000
         else:
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article[
@@ -242,12 +243,13 @@ class App:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article['id'][
                                                                       5:] + "_zpid"
                 returndata["zid"] = result.article['id'][5:]
+                returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
+                returndata["longitude"] = json.loads(returnString(result.script))['geo'][
+                    'longitude']
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
-
-        returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
-        returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
+        print(returndata["longitude"] + " / " + returndata["latitude"])
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
@@ -358,7 +360,8 @@ class App:
             return
         # print(soup.prettify())
 
-        print("Current process: "+multiprocessing.current_process().name+" "+returnString(soup.find("title")))
+        print("Current process: " + multiprocessing.current_process().name + " " + returnString(
+            soup.find("title")))
         if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
             return
 
