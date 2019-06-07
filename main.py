@@ -426,7 +426,8 @@ def spawnProcess(state):
 
 if __name__ == "__main__":
     state = input("Enter State Code:")
-    for i in range(0, 11):
+    process_count = int(input("How many process would you like to spawn in parallel:"))
+    for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
         time.sleep(5)
