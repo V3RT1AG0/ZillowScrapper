@@ -12,10 +12,11 @@ import json
 import os
 import time
 from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, remove_zip_code
+import multiprocessing
 
-from pyvirtualdisplay import Display
-display = Display(visible=0, size=(1366, 768))
-display.start()
+# from pyvirtualdisplay import Display
+# display = Display(visible=0, size=(1366, 768))
+# display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -74,7 +75,6 @@ class App:
             print("Bot detected..")
             return True
 
-
     def rotate_ip(self):
         proxyRotatorUrl = "http://falcon.proxyrotator.com:51337/?apiKey=" + proxyKey + "&get=true"
         json_response = requests.get(proxyRotatorUrl).json()
@@ -115,7 +115,7 @@ class App:
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
-        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./CSV/chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -228,8 +228,8 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 248")
                 return
-            returndata["latitude"] = result["data-latitude"]
-            returndata["longitude"] = result["data-longitude"]
+            # returndata["latitude"] = float(result["data-latitude"])/1000000
+            # returndata["longitude"] = float(result["data-longitude"])/1000000
         else:
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article[
@@ -242,8 +242,11 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
-            returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
-            returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
+
+        returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
+        returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
+        returndata["location"] = {"type": "Point",
+                                  "coordinates": [returndata["longitude"],returndata["latitude"]]}
 
         if check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
@@ -321,7 +324,6 @@ class App:
             "https": "http://" + self.cards_proxy
         }
 
-
     def find_articles_by_zip(self, zip):
         # get webpage and create soup
         with requests.Session() as s:
@@ -345,7 +347,7 @@ class App:
                 self.find_articles_by_zip(zip)
                 return
 
-        #print(r.text)
+        # print(r.text)
         soup = BeautifulSoup(r.text, 'lxml')
         if self.check_recaptcha(soup):
             self.handle_fetch_cards_exception()
@@ -380,7 +382,6 @@ class App:
                     print(str(e))
                     self.handle_fetch_cards_exception()
                     continue
-
 
             soup = BeautifulSoup(r.content, 'lxml')
 
