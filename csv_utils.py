@@ -1,6 +1,5 @@
 import pandas as pd
 import csv
-from db import insert_article_without_upsert
 import json
 
 

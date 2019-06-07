@@ -1,8 +1,4 @@
 # Utility file to fetch historical data from mongoDb and dump it intoCSV file
-
-import pandas as pd
-import csv
-import json
 from pymongo import MongoClient
 from csv_utils import write_data_to_csv
 
