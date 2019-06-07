@@ -14,9 +14,9 @@ import time
 from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, remove_zip_code
 import multiprocessing
 
-# from pyvirtualdisplay import Display
-# display = Display(visible=0, size=(1366, 768))
-# display.start()
+from pyvirtualdisplay import Display
+display = Display(visible=0, size=(1366, 768))
+display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -115,7 +115,7 @@ class App:
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
-        driver = webdriver.Chrome(executable_path='./CSV/chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
