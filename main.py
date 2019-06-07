@@ -38,13 +38,13 @@ def return_number(data):
 
 class App:
 
-    def __init__(self):
+    def __init__(self, state):
         self.proxyDict = {}
         self.req_headers = self.setHeaders()
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
-        state = input("Enter State Code:")
+
         zipcode = self.get_zip_codes(state)[0]
         while zipcode is not None:
             self.current_zipcode = str(zipcode)
@@ -246,7 +246,7 @@ class App:
         returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
         returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
         returndata["location"] = {"type": "Point",
-                                  "coordinates": [returndata["longitude"],returndata["latitude"]]}
+                                  "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
         if check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
@@ -414,8 +414,17 @@ class App:
             page += 1
 
 
+def spawnProcess(state):
+    App(state)
+
+
 if __name__ == "__main__":
-    app = App()
+    state = input("Enter State Code:")
+    for i in range(0, 2):
+        p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
+        p1.start()
+        time.sleep(5)
+
     # window = Tk()
     # window.title("Welcome to Zillow Scraper")
     # window.geometry('350x200')

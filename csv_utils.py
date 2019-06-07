@@ -88,3 +88,14 @@ def remove_zip_code(state, zipCode):
 
     with open('visited_zip.json', 'w') as outfile:
         json.dump(data, outfile)
+
+def write_data_to_csv(filename,data):
+    keys = data.keys()
+    try:
+        with open(filename, 'a') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=keys)
+            # writer.writeheader()
+            writer.writerow(data)
+    except IOError:
+        print("I/O error")
+#combineCSV()
