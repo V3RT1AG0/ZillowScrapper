@@ -249,7 +249,7 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
-        print(returndata["longitude"] + " / " + returndata["latitude"])
+        print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
