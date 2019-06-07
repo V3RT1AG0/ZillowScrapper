@@ -73,8 +73,6 @@ def write_to_csv(data):
     except IOError:
         print("I/O error")
 
-    insert_article_without_upsert(data)
-
 
 def remove_zip_code(state, zipCode):
     with open('visited_zip.json') as json_file:

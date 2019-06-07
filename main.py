@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from tkinter import *
-from db import insert_article, check_if_zid_already_exist
+from db import mongo
 import json
 import os
 import time
@@ -43,6 +43,7 @@ class App:
         self.req_headers = self.setHeaders()
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
+        self.mongo_client = mongo()
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
 
         zipcode = self.get_zip_codes(state)[0]
@@ -163,6 +164,7 @@ class App:
             pass
 
         # WRITING TO CSV FILE
+        self.mongo_client.insert_article_without_upsert(returndata)
         write_to_csv(returndata)
 
     def scrapeForSale(self, soup2, returndata):
@@ -209,6 +211,7 @@ class App:
             pass
 
         # WRITING TO CSV FILE
+        self.mongo_client.insert_article_without_upsert(returndata)
         write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
@@ -248,7 +251,7 @@ class App:
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
-        if check_if_zid_already_exist(returndata["zid"]) is not None:
+        if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
@@ -340,7 +343,7 @@ class App:
             # os.environ['https_proxy'] = self.pxy
             # os.environ['HTTPS_PROXY'] = self.pxy
             try:
-                r = s.get(url, proxies=self.proxyDict, timeout=10.0, headers=self.req_headers)
+                r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
             except Exception as e:
                 print(str(e))
                 self.handle_fetch_cards_exception()
@@ -355,7 +358,7 @@ class App:
             return
         # print(soup.prettify())
 
-        print(returnString(soup.find("title")))
+        print("Current process: "+multiprocessing.current_process().name+" "+returnString(soup.find("title")))
         if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
             return
 
@@ -377,7 +380,7 @@ class App:
                     zip) + "_rb/house_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
                 print(url)
                 try:
-                    r = s.get(url, proxies=self.proxyDict, timeout=10.0, headers=self.req_headers)
+                    r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
                 except Exception as e:
                     print(str(e))
                     self.handle_fetch_cards_exception()
@@ -420,7 +423,7 @@ def spawnProcess(state):
 
 if __name__ == "__main__":
     state = input("Enter State Code:")
-    for i in range(0, 2):
+    for i in range(0, 11):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
         time.sleep(5)
