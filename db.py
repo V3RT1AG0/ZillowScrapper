@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
+
 class mongo:
     def __init__(self):
         self.client = MongoClient('129.174.126.176', 27018)
@@ -21,3 +22,13 @@ class mongo:
     def insert_article_without_upsert(self, article):
         post_id = self.collection.insert_one(article)
         print("Inserted data with post id " + str(post_id))
+
+# self.client = MongoClient('129.174.126.176', 27018)
+#         db = self.client['Zillow']  # NAME OF DATABASE
+#         self.collection = db['House']  # NAME OF COLLECTION
+#         print("MongoDB connected...")
+
+# self.client = MongoClient('localhost', 27017)
+#         db = self.client['zillow']  # NAME OF DATABASE
+#         self.collection = db['House4']  # NAME OF COLLECTION
+#         print("MongoDB connected...")

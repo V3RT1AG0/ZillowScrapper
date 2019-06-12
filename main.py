@@ -234,6 +234,8 @@ class App:
                 return
             returndata["latitude"] = float(result["data-latitude"]) / 1000000
             returndata["longitude"] = float(result["data-longitude"]) / 1000000
+            # returndata["status"] = returnString(
+            #     result.find("span", {"class": "zsg-photo-card-status"}))
         else:
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article[
@@ -246,6 +248,8 @@ class App:
                 returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
                 returndata["longitude"] = json.loads(returnString(result.script))['geo'][
                     'longitude']
+                # returndata["status"] = returnString(
+                #     result.find("div", {"class": "list-card-type"}))
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
@@ -258,6 +262,10 @@ class App:
             return
 
         print("Fetching..." + houseurl)
+        # print(returndata["status"])
+        # print(result)
+
+
         try:
             self.driver.get(houseurl)
         except TimeoutException:
@@ -333,7 +341,7 @@ class App:
         # get webpage and create soup
         with requests.Session() as s:
             url = "https://www.zillow.com/homes/" + str(
-                zip) + "_rb/house_type/0_rs/1_fs/1_fr/0_mmm/"
+                zip) + "_rb/townhouse_type/0_rs/1_fs/1_fr/0_mmm/"
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
@@ -380,7 +388,7 @@ class App:
             # make a request for that particular page and create soup for that page
             with requests.Session() as s:
                 url = "https://www.zillow.com/homes/" + str(
-                    zip) + "_rb/house_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
+                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
                 print(url)
                 try:
                     r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
@@ -427,6 +435,7 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
+    # spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
