@@ -341,7 +341,7 @@ class App:
         # get webpage and create soup
         with requests.Session() as s:
             url = "https://www.zillow.com/homes/" + str(
-                zip) + "_rb/townhouse_type/0_rs/1_fs/1_fr/0_mmm/"
+                zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/"
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
