@@ -57,12 +57,14 @@ class App:
             except KeyboardInterrupt:
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state, zipcode)
+                self.driver.close()
                 return
             except Exception as e:
                 remove_zip_code(state, zipcode)
+                self.driver.close()
                 raise e
             zipcode = self.get_zip_codes(state)[0]
-
+        self.driver.close()
         # self.find_articles_by_state
 
     def get_zip_codes(self, state):
@@ -191,6 +193,14 @@ class App:
             value = returnString(fact.find("span", {"class": "ds-body ds-home-fact-value"}))
             returndata[label] = value
 
+        try:
+            if "Year built:" not in returndata:
+                returndata["Year built:"] = returnString(
+                    soup2.find("td", string="Year built").next_sibling)
+        except Exception:
+            print("Year data not found")
+            pass
+
         # SAVE HISTORICAL DATA
         try:
             price_history = soup2.find("table", {
@@ -264,7 +274,6 @@ class App:
         print("Fetching..." + houseurl)
         # print(returndata["status"])
         # print(result)
-
 
         try:
             self.driver.get(houseurl)
