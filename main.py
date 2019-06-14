@@ -380,6 +380,7 @@ class App:
         # if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
         #     return
         if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None:
+            print("no results for zip " + zip)
             return
         # if returnString(soup.find("span", {"class": "result-count"})) == "No Results":
         #     print("no results for "+zip)
@@ -434,7 +435,6 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
-                    raise e
                     logger.error(
                         repr(e) + " exception occoured while handling a zid. Moving to next zid....")
                     continue
