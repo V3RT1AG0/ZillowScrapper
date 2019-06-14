@@ -6,8 +6,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from tkinter import *
 from db import mongo
+import re
 import json
 import os
 import time
@@ -233,6 +233,7 @@ class App:
         returndata["zip"] = self.current_zipcode
         returndata["state"] = self.current_state
         if type == 1:
+            #data is obtained from result directly
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result['data-zpid'] + "_zpid"
                 returndata["zid"] = result['data-zpid']
@@ -244,9 +245,8 @@ class App:
                 return
             returndata["latitude"] = float(result["data-latitude"]) / 1000000
             returndata["longitude"] = float(result["data-longitude"]) / 1000000
-            # returndata["status"] = returnString(
-            #     result.find("span", {"class": "zsg-photo-card-status"}))
         else:
+            # else in case data is obtained from result.article
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article[
                     'data-zpid'] + "_zpid"
@@ -255,14 +255,12 @@ class App:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result.article['id'][
                                                                       5:] + "_zpid"
                 returndata["zid"] = result.article['id'][5:]
-                returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
-                returndata["longitude"] = json.loads(returnString(result.script))['geo'][
-                    'longitude']
-                # returndata["status"] = returnString(
-                #     result.find("div", {"class": "list-card-type"}))
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
+            returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
+            returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
+
         print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["longitude"], returndata["latitude"]]}
@@ -379,8 +377,13 @@ class App:
 
         print("Current process: " + multiprocessing.current_process().name + " " + returnString(
             soup.find("title")))
-        if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
+        # if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
+        #     return
+        if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None:
             return
+        # if returnString(soup.find("span", {"class": "result-count"})) == "No Results":
+        #     print("no results for "+zip)
+        #     return
 
         # get number of pages
         try:
@@ -431,8 +434,9 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
+                    raise e
                     logger.error(
-                        repr(e) + "exception occoured while handling a zid. Moving to next zid....")
+                        repr(e) + " exception occoured while handling a zid. Moving to next zid....")
                     continue
             page += 1
 
@@ -444,7 +448,9 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
-    # spawnProcess(state)
+    os.system('sudo killall chrome')
+    os.system('sudo killall chromedriver')
+    #spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()

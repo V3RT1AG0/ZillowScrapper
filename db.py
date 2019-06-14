@@ -7,7 +7,6 @@ class mongo:
         db = self.client['Zillow']  # NAME OF DATABASE
         self.collection = db['House']  # NAME OF COLLECTION
         print("MongoDB connected...")
-
     # post = {"id":1,"name":"asdsad"}
     def insert_article(self, article):
         # post_id = collection.insert_one(article).inserted_id
