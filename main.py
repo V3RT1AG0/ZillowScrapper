@@ -1,3 +1,4 @@
+import traceback
 from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
@@ -57,11 +58,14 @@ class App:
             except KeyboardInterrupt:
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state, zipcode)
-                self.driver.close()
+                # self.driver.close()
                 return
             except Exception as e:
+                print("caught in second level exception handler")
                 remove_zip_code(state, zipcode)
-                self.driver.close()
+                print(traceback.format_exc())
+                # self.driver.close()
+                time.sleep(4)
                 raise e
             zipcode = self.get_zip_codes(state)[0]
         self.driver.close()
@@ -80,8 +84,14 @@ class App:
             return True
 
     def rotate_ip(self):
+        success = False
         proxyRotatorUrl = "http://falcon.proxyrotator.com:51337/?apiKey=" + proxyKey + "&get=true"
-        json_response = requests.get(proxyRotatorUrl).json()
+        while not success:
+            try:
+                json_response = requests.get(proxyRotatorUrl).json()
+                success = True
+            except Exception as e:
+                print("Exception while fetching proxy url"+str(e)+ "retrying...")
         proxy = json_response["proxy"]
         print("Rotating IP...new proxy=" + proxy)
         return proxy
@@ -435,6 +445,7 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
+                    print(traceback.format_exc())
                     logger.error(
                         repr(e) + " exception occoured while handling a zid. Moving to next zid....")
                     continue
@@ -450,7 +461,7 @@ if __name__ == "__main__":
     process_count = int(input("How many process would you like to spawn in parallel:"))
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
-    #spawnProcess(state)
+    # spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
