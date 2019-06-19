@@ -269,6 +269,7 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
+            print(str(result))
             print(result.script)
             returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
