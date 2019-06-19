@@ -269,8 +269,6 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
-            print(str(result))
-            print(result.script)
             returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
@@ -278,7 +276,7 @@ class App:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
-        print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
+        #print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
@@ -388,8 +386,9 @@ class App:
             return
         # print(soup.prettify())
 
-        print("Current process: " + multiprocessing.current_process().name + " " + returnString(
-            soup.find("title")))
+        # print("Current process: " + multiprocessing.current_process().name + " " + returnString(
+        #     soup.find("title")))
+
         # if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
         #     return
         if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None:
@@ -448,7 +447,7 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
-                    print(traceback.format_exc())
+                    # print(traceback.format_exc())
                     logger.error(
                         repr(e) + " exception occoured while handling a zid. Moving to next zid....")
                     continue
