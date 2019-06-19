@@ -7,6 +7,7 @@ db = client['Zillow']  # NAME OF DATABASE
 collection = db['House']  # NAME OF COLLECTION
 print("MongoDB connected...")
 
+
 # def combineCSV():
 #     sell = pd.read_csv("./sell.csv")
 #     rent = pd.read_csv("./rent.csv")
@@ -16,16 +17,41 @@ print("MongoDB connected...")
 #     combined.to_csv("./new5.csv")
 
 
-for house in collection.find({"state": "VA"}):
-    zid = house["zid"]
-    zip = house["zip"]
-    history = house["SaleHistory"]
-    for sale in history:
-        data = {}
-        data["zip"] = zip
-        data["date"] = sale["date"]
-        data["price"] = sale["price"]
-        data["event"] = sale["event"]
-        data["zid"] = zid
-        write_data_to_csv("history.csv", data)
-print("done")
+def generate_state_and_zip():
+    # Run this script to fix incorrect state and zipcodes
+    for house in collection.find():
+        id = house["_id"]
+        address = house["address"].split()
+        zip = address[-1]
+        state = address[-2]
+        if not zip == house["zip"]:
+            collection.update_one({
+                '_id': id
+            }, {
+                '$set': {
+                    'zip': zip,
+                    'state': state
+                }
+            }, upsert=False)
+    print("done")
+
+
+def genrate_historical_data_for(state):
+    # Function to obtain historical data for a state.
+    # Output: CSV file with well formated historical data
+    for house in collection.find({"state": state}):
+        zid = house["zid"]
+        zip = house["zip"]
+        history = house["SaleHistory"]
+        for sale in history:
+            data = {}
+            data["zip"] = zip
+            data["date"] = sale["date"]
+            data["price"] = sale["price"]
+            data["event"] = sale["event"]
+            data["zid"] = zid
+            write_data_to_csv("history.csv", data)
+    print("done")
+
+
+generate_state_and_zip()

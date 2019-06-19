@@ -184,6 +184,9 @@ class App:
         returndata["cost/rent"] = returnString(soup2.find("span", {"class": "ds-value"}))
         returndata["status"] = returnString(soup2.find("span", {"class": "ds-status-details"}))
         returndata["address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
+        address = returndata["address"].split()
+        returndata["zip"] = address[-1]
+        returndata["state"] = address[-2]
         # finding all spans which gives bed bath and area
         bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
         # print(bed_bath_area)
@@ -240,8 +243,6 @@ class App:
 
         # use selenium to load individual house article
         # print(str(type))
-        returndata["zip"] = self.current_zipcode
-        returndata["state"] = self.current_state
         if type == 1:
             #data is obtained from result directly
             try:
@@ -268,25 +269,26 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
+            print(result.script)
             returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
-
-        print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
-        returndata["location"] = {"type": "Point",
-                                  "coordinates": [returndata["longitude"], returndata["latitude"]]}
 
         if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
+        print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
+        returndata["location"] = {"type": "Point",
+                                  "coordinates": [returndata["longitude"], returndata["latitude"]]}
+
+
         print("Fetching..." + houseurl)
-        # print(returndata["status"])
-        # print(result)
+
 
         try:
             self.driver.get(houseurl)
-        except TimeoutException:
-            print("Timeout exception while fetching houseurl")
+        except (TimeoutException,requests.exceptions) as e:
+            print(str(e) + " exception while fetching houseurl [self.driver.get()]")
             self.driver.quit()
             self.driver = self.setSeleniumDriver()
             self.scrapeArticle(result, type)
@@ -461,6 +463,7 @@ if __name__ == "__main__":
     process_count = int(input("How many process would you like to spawn in parallel:"))
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
+    os.system('sudo killall xvfb')
     # spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
