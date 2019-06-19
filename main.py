@@ -287,7 +287,7 @@ class App:
 
         try:
             self.driver.get(houseurl)
-        except (TimeoutException,requests.exceptions) as e:
+        except Exception as e:
             print(str(e) + " exception while fetching houseurl [self.driver.get()]")
             self.driver.quit()
             self.driver = self.setSeleniumDriver()
