@@ -194,7 +194,7 @@ class App:
 
         # WRITING TO CSV FILE
         self.mongo_client.insert_article_without_upsert(returndata)
-        #write_to_csv(returndata)
+        # write_to_csv(returndata)
 
     def scrapeForSale(self, soup2, returndata):
         returndata["Price"] = returnInteger(soup2.find("span", {"class": "ds-value"}))
@@ -262,7 +262,7 @@ class App:
 
         # WRITING TO CSV FILE
         self.mongo_client.insert_article_without_upsert(returndata)
-        write_to_csv(returndata)
+        # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
         returndata = dict()
