@@ -31,6 +31,22 @@ def returnString(data):
         return data.get_text().strip()
 
 
+def string_to_int(string):
+    result = re.sub('[^0-9]', '', string)
+    try:
+        result = int(result)
+    except ValueError as e:
+        print(e)
+    return result
+
+def returnInteger(data):
+    string = returnString(data)
+    if string == "":
+        return ""
+    else:
+        return string_to_int(string)
+
+
 def return_number(data):
     if data is None:
         return ""
@@ -91,7 +107,7 @@ class App:
                 json_response = requests.get(proxyRotatorUrl).json()
                 success = True
             except Exception as e:
-                print("Exception while fetching proxy url"+str(e)+ "retrying...")
+                print("Exception while fetching proxy url" + str(e) + "retrying...")
         proxy = json_response["proxy"]
         print("Rotating IP...new proxy=" + proxy)
         return proxy
@@ -135,19 +151,19 @@ class App:
         return driver
 
     def scrapeForSold(self, soup2, returndata):
-        returndata["cost/rent"] = return_number(soup2.find("div", {"class": "status"}))
-        returndata["status"] = "Sold"
-        returndata["address"] = returnString(soup2.find("h1", {"class": "zsg-h1"}))
+        returndata["Price"] = return_number(soup2.find("div", {"class": "status"}))
+        returndata["Status"] = "Sold"
+        returndata["Address"] = returnString(soup2.find("h1", {"class": "zsg-h1"}))
         # finding all spans which gives bed bath and area
         bed_bath_area = soup2.find("h3", {"class": "edit-facts-light"}).findAll("span",
                                                                                 {"class": False})
 
         # assigning each value in a list to a its corresponding varaible
-        returndata["bed"], returndata["bath"], returndata["area"] = [return_number(span) for span in
+        returndata["Bedrooms"], returndata["Bathrooms"], returndata["AreaSpace_SQFT"] = [return_number(span) for span in
                                                                      bed_bath_area]
 
         # returndata["summary"] = returnString(soup2.find("div", {"class": "zsg-content-item home-description"}))
-        returndata["zestimate"] = return_number(
+        returndata["ZestimatePrice"] = return_number(
             soup2.find("div", {"class": "zestimate primary-quote"}))
         # returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
 
@@ -178,25 +194,32 @@ class App:
 
         # WRITING TO CSV FILE
         self.mongo_client.insert_article_without_upsert(returndata)
-        write_to_csv(returndata)
+        #write_to_csv(returndata)
 
     def scrapeForSale(self, soup2, returndata):
-        returndata["cost/rent"] = returnString(soup2.find("span", {"class": "ds-value"}))
-        returndata["status"] = returnString(soup2.find("span", {"class": "ds-status-details"}))
-        returndata["address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
-        address = returndata["address"].split()
-        returndata["zip"] = address[-1]
-        returndata["state"] = address[-2]
+        returndata["Price"] = returnInteger(soup2.find("span", {"class": "ds-value"}))
+        returndata["Status"] = returnString(soup2.find("span", {"class": "ds-status-details"}))
+        returndata["Address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
+        address = returndata["Address"].split()
+        returndata["ZipCode"] = address[-1]
+        returndata["State"] = address[-2]
+        address = returndata["Address"].split(",")
+        returndata["Locality"] = address[-2].strip()
         # finding all spans which gives bed bath and area
         bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
         # print(bed_bath_area)
         # assigning each value in a list to a its corresponding varaible
-        returndata["bed"], returndata["bath"], returndata["area"] = [return_number(row.span) for row
-                                                                     in bed_bath_area][
-                                                                    :3]
+        returndata["Bedrooms"], returndata["Bathrooms"], returndata["AreaSpace_SQFT"] = [
+                                                                                            return_number(
+                                                                                                row.span)
+                                                                                            for row
+                                                                                            in
+                                                                                            bed_bath_area][
+                                                                                        :3]
         # returndata["summary"] = returnString(soup2.find("div", {"class": "character-count-text-fold-container"}))
         # returndata["zestimate"] = return_number(soup2.find("h4", {"class": "zestimate-value"}))
-        returndata["zestimate"] = return_number(soup2.find("span", {"class": "ds-estimate-value"}))
+        returndata["ZestimatePrice"] = return_number(
+            soup2.find("span", {"class": "ds-estimate-value"}))
 
         # returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
         facts = soup2.find("ul", {"class": "ds-home-fact-list"}).find_all("li")
@@ -204,7 +227,10 @@ class App:
             label = returnString(
                 fact.find("span", {"class": "ds-standard-label ds-home-fact-label"}))
             value = returnString(fact.find("span", {"class": "ds-body ds-home-fact-value"}))
-            returndata[label] = value
+            if '$' in value:
+                returndata[label] = string_to_int(value)
+            else:
+                returndata[label] = value
 
         try:
             if "Year built:" not in returndata:
@@ -244,7 +270,7 @@ class App:
         # use selenium to load individual house article
         # print(str(type))
         if type == 1:
-            #data is obtained from result directly
+            # data is obtained from result directly
             try:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result['data-zpid'] + "_zpid"
                 returndata["zid"] = result['data-zpid']
@@ -254,8 +280,8 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 248")
                 return
-            returndata["latitude"] = float(result["data-latitude"]) / 1000000
-            returndata["longitude"] = float(result["data-longitude"]) / 1000000
+            returndata["Latitude"] = float(result["data-latitude"]) / 1000000
+            returndata["Longitude"] = float(result["data-longitude"]) / 1000000
         else:
             # else in case data is obtained from result.article
             try:
@@ -269,20 +295,18 @@ class App:
             except Exception as e:
                 logger.error("exception " + repr(e) + " on line 257")
                 return
-            returndata["latitude"] = json.loads(returnString(result.script))['geo']['latitude']
-            returndata["longitude"] = json.loads(returnString(result.script))['geo']['longitude']
+            returndata["Latitude"] = json.loads(returnString(result.script))['geo']['latitude']
+            returndata["Longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
         if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
-        #print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
+        # print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
-                                  "coordinates": [returndata["longitude"], returndata["latitude"]]}
-
+                                  "coordinates": [returndata["Longitude"], returndata["Latitude"]]}
 
         print("Fetching..." + houseurl)
-
 
         try:
             self.driver.get(houseurl)
@@ -297,8 +321,15 @@ class App:
         soup2 = BeautifulSoup(html, 'lxml')
 
         # restart scraping for same article if captcha or error deteted
-        if self.check_recaptcha(soup2) or soup2.find("div", {"id": "main-frame-error"}) is not None:
-            print("Error window or bot detected")
+        if self.check_recaptcha(soup2):
+            print("Bot detected")
+            self.driver.quit()
+            self.driver = self.setSeleniumDriver()
+            self.scrapeArticle(result, type, 0)
+            return
+
+        if soup2.find("div", {"id": "main-frame-error"}) is not None:
+            print("Error window detected")
             self.driver.quit()
             self.driver = self.setSeleniumDriver()
             if retry == 0:
@@ -340,6 +371,8 @@ class App:
             # EXPERIMENTAL CHANGES
             pass
         except Exception as e:
+            # raise e
+            print(traceback.format_exc())
             logger.error("exception " + repr(e) + " for url " + houseurl)
             pass
 
@@ -447,9 +480,11 @@ class App:
                 try:
                     self.scrapeArticle(result, card_type)
                 except Exception as e:
-                    # print(traceback.format_exc())
+                    # raise e
+                    print(traceback.format_exc())
                     logger.error(
-                        repr(e) + " exception occoured while handling a zid. Moving to next zid....")
+                        repr(
+                            e) + " exception occoured while handling a zid. Moving to next zid....")
                     continue
             page += 1
 
@@ -464,7 +499,7 @@ if __name__ == "__main__":
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
     os.system('sudo killall xvfb')
-    # spawnProcess(state)
+    #spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()

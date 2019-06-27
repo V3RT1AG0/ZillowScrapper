@@ -53,7 +53,7 @@ def get_unvisited_zip(state):
 def write_to_csv(data):
     print(data)
 
-    status = data["status"]
+    status = data["Status"]
     if status == "House for rent":
         filename = "rent.csv"
     elif status == "Sold":
@@ -95,4 +95,11 @@ def write_data_to_csv(filename,data):
             writer.writerow(data)
     except IOError:
         print("I/O error")
+
+def remove_fields_with_value(column,value):
+    df = pd.read_csv("./history-1.csv")
+    df = df[df[column] != value]
+    df.to_csv("./history2.csv")
+
+remove_fields_with_value("status","Listed for rent")
 #combineCSV()

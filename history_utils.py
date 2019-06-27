@@ -1,6 +1,10 @@
 # Utility file to fetch historical data from mongoDb and dump it intoCSV file
 from pymongo import MongoClient
 from csv_utils import write_data_to_csv
+import re
+import logging
+
+logger = logging.getLogger("Utlis Logger:")
 
 client = MongoClient('129.174.126.176', 27018)
 db = client['Zillow']  # NAME OF DATABASE
@@ -15,22 +19,55 @@ print("MongoDB connected...")
 #     combined = pd.concat([sell, rent, auction], sort=False)
 #     combined = combined.reset_index(drop=True)
 #     combined.to_csv("./new5.csv")
+def get_number_from_string(string):
+    if string is None or not string or string == 'No Data':
+        return None
+    result = re.sub('[^0-9]', '', string)
+    result = int(result)
+    return result
+
+
+def cleanDollarSignAndCreateLocality():
+    # Run this script to remove dollar sign from price and price_persquare and create locality from address
+    for house in collection.find(no_cursor_timeout=True):
+        try:
+            id = house["_id"]
+            if type(house.get("Price")) is int:
+                    continue
+            new_price = get_number_from_string(house.get("Price"))
+            new_price_sqft = get_number_from_string(house.get("Price_PerSQFT"))
+            address = house["Address"].split(",")
+            locality = address[-2].strip()
+            collection.update_one({
+                '_id': id
+            }, {
+                '$set': {
+                    'locality': locality,
+                    'Price': new_price,
+                    'Price_PerSQFT': new_price_sqft
+                }
+            }, upsert=False)
+            # print(new_price_sqft, locality, new_price)
+        except Exception as e:
+            logger.error(repr(e))
+            continue
+    print("done")
 
 
 def generate_state_and_zip():
     # Run this script to fix incorrect state and zipcodes
     for house in collection.find():
         id = house["_id"]
-        address = house["address"].split()
+        address = house["Address"].split()
         zip = address[-1]
         state = address[-2]
-        if not zip == house["zip"]:
+        if "ZipCode" not in house or not zip == house["ZipCode"]:
             collection.update_one({
                 '_id': id
             }, {
                 '$set': {
-                    'zip': zip,
-                    'state': state
+                    'ZipCode': zip,
+                    'State': state
                 }
             }, upsert=False)
     print("done")
@@ -39,13 +76,13 @@ def generate_state_and_zip():
 def genrate_historical_data_for(state):
     # Function to obtain historical data for a state.
     # Output: CSV file with well formated historical data
-    for house in collection.find({"state": state}):
+    for house in collection.find({"State": state}):
         zid = house["zid"]
-        zip = house["zip"]
+        zip = house["ZipCode"]
         history = house["SaleHistory"]
         for sale in history:
             data = {}
-            data["zip"] = zip
+            data["ZipCode"] = zip
             data["date"] = sale["date"]
             data["price"] = sale["price"]
             data["event"] = sale["event"]
