@@ -97,9 +97,10 @@ def write_data_to_csv(filename,data):
         print("I/O error")
 
 def remove_fields_with_value(column,value):
+    #remove fields from history csv with specific column and value
+    #Eg:- remove_fields_with_value("status","Listed for rent")
     df = pd.read_csv("./history-1.csv")
     df = df[df[column] != value]
     df.to_csv("./history2.csv")
 
-remove_fields_with_value("status","Listed for rent")
 #combineCSV()
