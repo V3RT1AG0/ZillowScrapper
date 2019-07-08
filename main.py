@@ -269,8 +269,8 @@ class App:
             pass
 
         # WRITING TO CSV FILE
-        print(returndata)
-        #self.mongo_client.insert_article_without_upsert(returndata)
+        # print(returndata)
+        self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
