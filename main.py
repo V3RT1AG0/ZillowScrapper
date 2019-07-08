@@ -131,7 +131,7 @@ class App:
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--disable-popup-blocking")
         options.add_argument("--incognito")
-        options.add_argument("--window-size=1440, 900")
+        options.add_argument("--window-size=1366, 768")
         # options.add_argument('--headless')
 
         ############
@@ -357,12 +357,15 @@ class App:
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSold(soup2, returndata)
             else:
+
                 WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
                 WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located(
                         (By.CLASS_NAME, "ds-price-and-tax-section-table")))
                 try:
+                    WebDriverWait(self.driver, 20).until(
+                        EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
                     self.driver.find_element_by_link_text("See more neighborhood details").click();
                     WebDriverWait(self.driver, 25).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
