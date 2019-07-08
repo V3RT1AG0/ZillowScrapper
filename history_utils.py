@@ -1,8 +1,8 @@
 # Utility file to fetch historical data from mongoDb and dump it intoCSV file
 from pymongo import MongoClient
-from csv_utils import write_data_to_csv
 import re
 import logging
+import csv
 
 logger = logging.getLogger("Utlis Logger:")
 
@@ -76,6 +76,7 @@ def generate_state_and_zip():
 def genrate_historical_data_for(state):
     # Function to obtain historical data for a state.
     # Output: CSV file with well formated historical data
+    arrayData = []
     for house in collection.find({"State": state}):
         zid = house["zid"]
         zip = house["ZipCode"]
@@ -87,8 +88,19 @@ def genrate_historical_data_for(state):
             data["price"] = sale["price"]
             data["event"] = sale["event"]
             data["zid"] = zid
-            write_data_to_csv("history.csv", data)
+            arrayData.append(data)
+    write_data_to_csv(state + "_history.csv", arrayData)
     print("done")
 
+def write_data_to_csv(filename,data):
+    keys = data[0].keys()
+    try:
+        with open(filename, 'a') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=keys)
+            writer.writeheader()
+            writer.writerows(data)
+    except IOError:
+        print("I/O error")
 
-generate_state_and_zip()
+
+#generate_state_and_zip()

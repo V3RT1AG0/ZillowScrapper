@@ -207,6 +207,14 @@ class App:
         returndata["Locality"] = address[-2].strip()
         # finding all spans which gives bed bath and area
         bed_bath_area = soup2.findAll("span", {"class": "ds-bed-bath-living-area"})
+        try:
+            scores = soup2.findAll("a", {"class": "ws-value"})
+            returndata["WalkScore"] = returnInteger(scores[0])
+            returndata["TransitScore"] = returnInteger(scores[1])
+        except Exception as e:
+            print("unable to fetch walk/trasit score")
+            logger.error(repr(e))
+            pass
         # print(bed_bath_area)
         # assigning each value in a list to a its corresponding varaible
         returndata["Bedrooms"], returndata["Bathrooms"], returndata["AreaSpace_SQFT"] = [
@@ -261,7 +269,8 @@ class App:
             pass
 
         # WRITING TO CSV FILE
-        self.mongo_client.insert_article_without_upsert(returndata)
+        print(returndata)
+        #self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
@@ -353,6 +362,13 @@ class App:
                 WebDriverWait(self.driver, 25).until(
                     EC.presence_of_element_located(
                         (By.CLASS_NAME, "ds-price-and-tax-section-table")))
+                try:
+                    self.driver.find_element_by_link_text("See more neighborhood details").click();
+                    WebDriverWait(self.driver, 25).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
+                except Exception as e:
+                    logger.error(repr(e))
+                    pass
                 # HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
                 # SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
                 html = self.driver.page_source
@@ -499,7 +515,7 @@ if __name__ == "__main__":
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
     os.system('sudo killall xvfb')
-    #spawnProcess(state)
+    # spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()

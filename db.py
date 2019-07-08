@@ -23,6 +23,13 @@ class mongo:
         print("Inserted data with post id " + str(post_id))
 
 
+def get_collection():
+    client = MongoClient('129.174.126.176', 27018)
+    db = client['Zillow']  # NAME OF DATABASE
+    collection = db['House']  # NAME OF COLLECTION
+    print("MongoDB connected...")
+    return collection
+
 # self.client = MongoClient('129.174.126.176', 27018)
 #         db = self.client['Zillow']  # NAME OF DATABASE
 #         self.collection = db['House']  # NAME OF COLLECTION

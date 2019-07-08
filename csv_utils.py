@@ -1,6 +1,8 @@
 import pandas as pd
 import csv
 import json
+from history_utils import genrate_historical_data_for
+from db import get_collection
 
 
 def combineCSV():
@@ -62,15 +64,7 @@ def write_to_csv(data):
         filename = "sell.csv"
     else:
         filename = "auction.csv"
-
-    keys = data.keys()
-    try:
-        with open(filename, 'a') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=keys)
-            # writer.writeheader()
-            writer.writerow(data)
-    except IOError:
-        print("I/O error")
+    write_data_to_csv(filename, data)
 
 
 def remove_zip_code(state, zipCode):
@@ -86,21 +80,80 @@ def remove_zip_code(state, zipCode):
     with open('visited_zip.json', 'w') as outfile:
         json.dump(data, outfile)
 
-def write_data_to_csv(filename,data):
+
+def write_data_to_csv(filename, data):
     keys = data.keys()
     try:
         with open(filename, 'a') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=keys)
             # writer.writeheader()
-            writer.writerow(data)
+            writer.writerows(data)
     except IOError:
         print("I/O error")
 
-def remove_fields_with_value(column,value):
-    #remove fields from history csv with specific column and value
-    #Eg:- remove_fields_with_value("status","Listed for rent")
+
+def write_multi_data_to_csv(filename, data):
+    try:
+        with open(filename, 'a') as csvfile:
+            fieldnames = ["_id", "State", "Status", "Type", "location", "zid", "Address", "Price",
+                          "Price_PerSQFT", "AreaSpace_SQFT", "ZipCode", "ZestimatePrice",
+                          "YearBuilt",
+                          "Bathrooms", "Bedrooms",
+                          "Cooling",
+                          "Date_available", "Deposit_fees", "HOAFee", "Heating", "Latitude",
+                          "Laundry", "Longitude", "Locality", "Lot", "Parking", "Pets",
+                          "SaleHistory", "Saves", "DaysOnZillow", '']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(data)
+    except IOError:
+        print("I/O error")
+
+
+def remove_fields_with_value(column, value):
+    # remove fields from history csv with specific column and value
+    # Eg:- remove_fields_with_value("status","Listed for rent")
     df = pd.read_csv("./history-1.csv")
     df = df[df[column] != value]
     df.to_csv("./history2.csv")
 
-#combineCSV()
+
+def remove_rent_entries_from(filename, destFilename):
+    # remove fields from history csv which contains rent data
+    # Eg:- remove_fields_with_value("status","Listed for rent")
+    df = pd.read_csv("./" + filename,low_memory=False)
+    # df = pd.read_csv("./VA_history.csv",low_memory=False)
+    indexes = df.index[df['event'] == "Listed for rent"].values.tolist()
+    result = list(map(lambda x: x + 1, indexes))
+    # print((df.loc[[107375]]["status"]=="Listing removed").all())
+    result = list(filter(lambda x: x <= df.tail(1).index.item() and (
+            df.loc[[x]]["event"] == "Listing removed").all(), result))
+    remainder = df.drop(result + indexes)
+    remainder.to_csv("./" + destFilename)
+
+
+def getSaleandRentCsvFor(state):
+    collection = get_collection()
+    rent = list(collection.find({"State": state, "Status": {
+        "$in": ["Townhouse for rent", "Condo for rent", "House for rent"]}}))
+    sale = list(collection.find({"State": state,
+                                 "Status": {"$nin": ["Townhouse for rent", "Condo for rent",
+                                                     "House for rent"]}}))
+
+    write_multi_data_to_csv(state + "_rent.csv", rent)
+    write_multi_data_to_csv(state + "_sale.csv", sale)
+    genrate_historical_data_for(state)
+    remove_rent_entries_from(state + "_history.csv", state + "_history_without_rent.csv")
+
+
+# getSaleandRentCsvFor("VA")
+
+# def get_csv_file_for(array_of_state_code):
+#     for state in array_of_state_code:
+#         getSaleandRentCsvFor(state)
+#         print("Done for state of"+state)
+#
+# get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
+# combineCSV()
+
+# remove_rent_entries_from("./VA_history.csv", "./VA_history_without_rent.csv")
