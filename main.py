@@ -364,12 +364,13 @@ class App:
                     EC.presence_of_element_located(
                         (By.CLASS_NAME, "ds-price-and-tax-section-table")))
                 try:
-                    element = self.driver.find_element_by_link_text("See more neighborhood details")
-                    self.driver.execute_script("arguments[0].scrollIntoView();", element)
-                    WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
-                    element.click();
-                    WebDriverWait(self.driver, 10).until(
+                    if not len(self.driver.find_elements_by_class_name("ws-value")) > 0:
+                        element = self.driver.find_element_by_link_text("See more neighborhood details")
+                        self.driver.execute_script("arguments[0].scrollIntoView();", element)
+                        WebDriverWait(self.driver, 3).until(
+                            EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
+                        element.click();
+                    WebDriverWait(self.driver, 3).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
                 except Exception as e:
                     logger.error(repr(e))
