@@ -12,7 +12,7 @@ import re
 import json
 import os
 import time
-from csv_utils import write_to_csv, get_unvisited_zip, write_visited_zip_code, remove_zip_code
+from csv_utils import get_unvisited_zip, write_visited_zip_code, remove_zip_code
 import multiprocessing
 
 from pyvirtualdisplay import Display
@@ -22,6 +22,7 @@ display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
+mongo_client = mongo()
 
 
 def returnString(data):
@@ -54,6 +55,7 @@ def return_number(data):
         return re.sub('[^0-9]', '', returnString(data))
 
 
+
 class App:
 
     def __init__(self, state):
@@ -61,7 +63,7 @@ class App:
         self.req_headers = self.setHeaders()
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
-        self.mongo_client = mongo()
+
         # self.driver.get("https://www.whatismyip.com/my-ip-information/")
 
         zipcode = self.get_zip_codes(state)[0]
@@ -193,7 +195,7 @@ class App:
             pass
 
         # WRITING TO CSV FILE
-        self.mongo_client.insert_article_without_upsert(returndata)
+        mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeForSale(self, soup2, returndata):
@@ -270,7 +272,7 @@ class App:
 
         # WRITING TO CSV FILE
         # print(returndata)
-        self.mongo_client.insert_article_without_upsert(returndata)
+        mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
@@ -307,7 +309,7 @@ class App:
             returndata["Latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["Longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
-        if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
+        if mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
             print("zid: " + returndata["zid"] + " already exist in db")
             return
 
