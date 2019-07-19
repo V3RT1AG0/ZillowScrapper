@@ -97,7 +97,7 @@ def write_multi_data_to_csv(filename, data):
         with open(filename, 'a') as csvfile:
             fieldnames = ["_id", "State", "Status", "Type", "location", "zid", "Address", "Price",
                           "Price_PerSQFT", "AreaSpace_SQFT", "ZipCode", "ZestimatePrice",
-                          "YearBuilt",
+                          "YearBuilt", "WalkScore", "TransitScore",
                           "Bathrooms", "Bedrooms",
                           "Cooling",
                           "Date_available", "Deposit_fees", "HOAFee", "Heating", "Latitude",
@@ -121,7 +121,7 @@ def remove_fields_with_value(column, value):
 def remove_rent_entries_from(filename, destFilename):
     # remove fields from history csv which contains rent data
     # Eg:- remove_fields_with_value("status","Listed for rent")
-    df = pd.read_csv("./" + filename,low_memory=False)
+    df = pd.read_csv("./" + filename, low_memory=False)
     # df = pd.read_csv("./VA_history.csv",low_memory=False)
     indexes = df.index[df['event'] == "Listed for rent"].values.tolist()
     result = list(map(lambda x: x + 1, indexes))
@@ -130,6 +130,34 @@ def remove_rent_entries_from(filename, destFilename):
             df.loc[[x]]["event"] == "Listing removed").all(), result))
     remainder = df.drop(result + indexes)
     remainder.to_csv("./" + destFilename)
+
+
+def fixIncorrectFieldNames():
+    collection = get_collection()
+    collection.update_many({}, {"$rename":
+                                   {"cost/rent": "Price", "Year built:": "YearBuilt",
+                                    "Price/sqft": "Price_PerSQFT",
+                                    "Date available": "Date_available", "HOA": "HOAFee"
+                                    }})
+    collection.update_many({}, {"$rename":
+                                   {"Date available:": "Date_available", "Year Built": "YearBuilt",
+                                    "Deposit & fees:": "Deposit_fees",
+                                    "Price/sqft:": "Price_PerSQFT", "Type:": "Type","HOA:": "HOAFee"
+                                    }})
+    collection.update_many({}, {"$rename":
+                                   {"zip": "ZipCode", "state": "State", "latitude:": "Latitude",
+                                    "longitude": "Longitude", "cost_rent": "Price",
+                                    "status": "Status",
+                                    "address": "Address", "bed": "Bedrooms", "bath": "Bathrooms",
+                                    "area": "AreaSpace_SQFT", "zestimate": "ZestimatePrice",
+                                    "Year_built": "YearBuilt", "Lot:": "Lot", "Cooling:": "Cooling",
+                                    "Parking:": "Parking", "Heating:": "Heating",
+                                    "Price_sqft": "Price_PerSQFT",
+                                    "Pets:": "Pets", "Laundry:": "Laundry",
+                                    "HOA": "HOAFee", "Deposit & fees": "Deposit_fees",
+                                    "Days on Zillow": "DaysOnZillow"
+                                    }})
+    print("Column names fixed..")
 
 
 def getSaleandRentCsvFor(state):
@@ -145,15 +173,21 @@ def getSaleandRentCsvFor(state):
     genrate_historical_data_for(state)
     remove_rent_entries_from(state + "_history.csv", state + "_history_without_rent.csv")
 
+def get_csv_file_for(array_of_state_code):
+    fixIncorrectFieldNames()
+    for state in array_of_state_code:
+        getSaleandRentCsvFor(state)
+        print("Done for state - "+state)
+
+# get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
+get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
 
 # getSaleandRentCsvFor("VA")
 
-# def get_csv_file_for(array_of_state_code):
-#     for state in array_of_state_code:
-#         getSaleandRentCsvFor(state)
-#         print("Done for state of"+state)
-#
-# get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
+
+
+
 # combineCSV()
 
 # remove_rent_entries_from("./VA_history.csv", "./VA_history_without_rent.csv")
+# fixIncorrectFieldNames()
