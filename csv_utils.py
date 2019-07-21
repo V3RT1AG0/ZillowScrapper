@@ -93,6 +93,13 @@ def write_data_to_csv(filename, data):
 
 
 def write_multi_data_to_csv(filename, data):
+    def mapper(item):
+        if "WalkScore" not in item:
+            item["WalkScore"] = 0
+        if "TransitScore" not in item:
+            item["TransitScore"] = 0
+        return item
+
     try:
         with open(filename, 'a') as csvfile:
             fieldnames = ["_id", "State", "Status", "Type", "location", "zid", "Address", "Price",
@@ -105,7 +112,8 @@ def write_multi_data_to_csv(filename, data):
                           "SaleHistory", "Saves", "DaysOnZillow", '']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(data)
+            modData = list(map(mapper,data))
+            writer.writerows(modData)
     except IOError:
         print("I/O error")
 
@@ -157,6 +165,10 @@ def fixIncorrectFieldNames():
                                     "HOA": "HOAFee", "Deposit & fees": "Deposit_fees",
                                     "Days on Zillow": "DaysOnZillow"
                                     }})
+
+    # collection.update({"TransitScore": {"$exists": False}}, {"$set": {"TransitScore": 0}})
+    # collection.update({"WalkScore": {"$exists": False}}, {"$set": {"WalkScore": 0}})
+
     print("Column names fixed..")
 
 
@@ -180,7 +192,8 @@ def get_csv_file_for(array_of_state_code):
         print("Done for state - "+state)
 
 # get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
-get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
+# get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
+# get_csv_file_for(["NC"])
 
 # getSaleandRentCsvFor("VA")
 
