@@ -127,7 +127,7 @@ class App:
             print("try 2")
             rentZestimate = return_number(soup.find("div", {"id": "ds-rental-home-values"}))
         if rentZestimate is None:
-            return
+            rentZestimate = 0
         #     print("try3")
         #     element = self.driver.find_element_by_link_text("Zestimate history & details")
         #     WebDriverWait(self.driver, 7).until(
@@ -193,4 +193,4 @@ if __name__ == "__main__":
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
-        time.sleep(5)
+        time.sleep(15)
