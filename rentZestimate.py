@@ -17,8 +17,8 @@ import multiprocessing
 
 from pyvirtualdisplay import Display
 
-display = Display(visible=0, size=(1366, 768))
-display.start()
+# display = Display(visible=0, size=(1366, 768))
+# display.start()
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -79,6 +79,12 @@ class App:
                     {"State": state, "Rentzestimate": {"$exists": False}, "Status": "For sale"},
                     no_cursor_timeout=True)
             except Exception as e:
+                rentZestimate = 1
+                self.collection.update_one({"zid": item["zid"]}, {
+                    '$set': {
+                        "Rentzestimate": rentZestimate
+                    }
+                }, upsert=False)
                 print(repr(e))
                 pass
 
@@ -160,7 +166,7 @@ class App:
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
-        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./CSV/chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -186,11 +192,11 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
-    os.system('sudo killall chrome')
-    os.system('sudo killall chromedriver')
-    os.system('sudo killall xvfb')
-    # spawnProcess(state)
-    for i in range(0, process_count):
-        p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
-        p1.start()
-        time.sleep(15)
+    # os.system('sudo killall chrome')
+    # os.system('sudo killall chromedriver')
+    # os.system('sudo killall xvfb')
+    spawnProcess(state)
+    # for i in range(0, process_count):
+    #     p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
+    #     p1.start()
+    #     time.sleep(15)
