@@ -69,11 +69,15 @@ class App:
     def __init__(self, state):
         self.driver = self.setSeleniumDriver()
         self.collection = get_collection()
-        for item in self.collection.find(
-                {"State": state, "RentZestimate": {"$exists": False}, "Status": "For sale"},
-                no_cursor_timeout=True):
+        item = self.collection.find_one(
+            {"State": state, "RentZestimate": {"$exists": False}, "Status": "For sale"},
+            no_cursor_timeout=True)
+        while item is not None:
             try:
                 self.get_data(item)
+                item = self.collection.find_one(
+                    {"State": state, "RentZestimate": {"$exists": False}, "Status": "For sale"},
+                    no_cursor_timeout=True)
             except Exception as e:
                 print(repr(e))
                 pass
@@ -181,6 +185,9 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
+    os.system('sudo killall chrome')
+    os.system('sudo killall chromedriver')
+    os.system('sudo killall xvfb')
     # spawnProcess(state)
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
