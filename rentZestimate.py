@@ -70,13 +70,13 @@ class App:
         self.driver = self.setSeleniumDriver()
         self.collection = get_collection()
         item = self.collection.find_one(
-            {"State": state, "RentZestimate": {"$exists": False}, "Status": "For sale"},
+            {"State": state, "Rentzestimate": {"$exists": False}, "Status": "For sale"},
             no_cursor_timeout=True)
         while item is not None:
             try:
                 self.get_data(item)
                 item = self.collection.find_one(
-                    {"State": state, "RentZestimate": {"$exists": False}, "Status": "For sale"},
+                    {"State": state, "Rentzestimate": {"$exists": False}, "Status": "For sale"},
                     no_cursor_timeout=True)
             except Exception as e:
                 print(repr(e))
