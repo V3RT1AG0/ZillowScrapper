@@ -127,17 +127,18 @@ class App:
             print("try 2")
             rentZestimate = return_number(soup.find("div", {"id": "ds-rental-home-values"}))
         if rentZestimate is None:
-            print("try3")
-            element = self.driver.find_element_by_link_text("Zestimate history & details")
-            WebDriverWait(self.driver, 7).until(
-                EC.element_to_be_clickable((By.LINK_TEXT, "Zestimate history & details")))
-            element.click()
-            WebDriverWait(self.driver, 3)
-            html2 = self.driver.page_source
-            soup2 = BeautifulSoup(html2, 'lxml')
-            rentZestimate = return_number(
-                soup2.find("li", {"class": "tertiary-item"}).find("div",
-                                                                  {"class": "zestimate-value"}))
+            return
+        #     print("try3")
+        #     element = self.driver.find_element_by_link_text("Zestimate history & details")
+        #     WebDriverWait(self.driver, 7).until(
+        #         EC.element_to_be_clickable((By.LINK_TEXT, "Zestimate history & details")))
+        #     element.click()
+        #     WebDriverWait(self.driver, 3)
+        #     html2 = self.driver.page_source
+        #     soup2 = BeautifulSoup(html2, 'lxml')
+        #     rentZestimate = return_number(
+        #         soup2.find("li", {"class": "tertiary-item"}).find("div",
+        #                                                           {"class": "zestimate-value"}))
         print("rentZestimate = " + rentZestimate + "for zid=" + item["zid"])
         self.collection.update_one({"zid": item["zid"]}, {
             '$set': {
