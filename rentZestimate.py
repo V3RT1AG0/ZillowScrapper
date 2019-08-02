@@ -79,12 +79,13 @@ class App:
                     {"State": state, "Rentzestimate": {"$exists": False}, "Status": "For sale"},
                     no_cursor_timeout=True)
             except Exception as e:
-                rentZestimate = 1
+                rentZestimate = 0
                 self.collection.update_one({"zid": item["zid"]}, {
                     '$set': {
                         "Rentzestimate": rentZestimate
                     }
                 }, upsert=False)
+                print(traceback.format_exc())
                 print(repr(e))
                 pass
 
@@ -145,7 +146,7 @@ class App:
         #     rentZestimate = return_number(
         #         soup2.find("li", {"class": "tertiary-item"}).find("div",
         #                                                           {"class": "zestimate-value"}))
-        print("rentZestimate = " + rentZestimate + "for zid=" + item["zid"])
+        print("rentZestimate = " + str(rentZestimate) + "for zid=" + str(item["zid"]))
         self.collection.update_one({"zid": item["zid"]}, {
             '$set': {
                 "Rentzestimate": rentZestimate
@@ -163,8 +164,8 @@ class App:
         options.add_argument("--incognito")
         options.add_argument("--window-size=1366, 768")
         options.add_argument('--no-sandbox')
-        options.add_experimental_option("prefs", {
-            "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
+        # options.add_experimental_option("prefs", {
+        #     "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
         driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
         # /usr/local/bin/chromedriver
@@ -199,4 +200,4 @@ if __name__ == "__main__":
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
-        time.sleep(15)
+        time.sleep(60)
