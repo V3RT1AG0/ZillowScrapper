@@ -17,8 +17,10 @@ import multiprocessing
 
 from pyvirtualdisplay import Display
 
+##Comment out this line if running on local machine##
 display = Display(visible=0, size=(1366, 768))
 display.start()
+#####################################################
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
@@ -53,7 +55,7 @@ def return_number(data):
     else:
         return re.sub('[^0-9]', '', returnString(data))
 
-
+#Scrapper code start
 class App:
 
     def __init__(self, state):
@@ -62,7 +64,6 @@ class App:
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
         self.mongo_client = mongo()
-        # self.driver.get("https://www.whatismyip.com/my-ip-information/")
 
         zipcode = self.get_zip_codes(state)[0]
         while zipcode is not None:
@@ -72,20 +73,23 @@ class App:
             try:
                 self.find_articles_by_zip(str(zipcode))  # 22312
             except KeyboardInterrupt:
+                # Remove the zipcode from visited zipcode list in case of keyboard interupt
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state, zipcode)
                 # self.driver.close()
                 return
             except Exception as e:
+                # In case of any other exception remove the zipcode and then throw the exception again
                 print("caught in second level exception handler")
                 remove_zip_code(state, zipcode)
                 print(traceback.format_exc())
                 # self.driver.close()
                 time.sleep(4)
                 raise e
+            # get next zipcode for that particular state
             zipcode = self.get_zip_codes(state)[0]
         self.driver.close()
-        # self.find_articles_by_state
+
 
     def get_zip_codes(self, state):
         zipcodes = get_unvisited_zip(state)
@@ -132,11 +136,11 @@ class App:
         options.add_argument("--disable-popup-blocking")
         options.add_argument("--incognito")
         options.add_argument("--window-size=1366, 768")
-        # options.add_argument('--headless')
-
-        ############
-        # options.add_argument('--disable-gpu')
         options.add_argument('--no-sandbox')
+
+        ############ Experimental parameters
+        # options.add_argument('--headless')
+        # options.add_argument('--disable-gpu')
         # options.add_argument("start-maximized")
         # options.add_argument("disable-infobars")
         # options.add_argument("--disable-extensions")
@@ -145,6 +149,8 @@ class App:
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
+
+        # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
         driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
@@ -521,25 +527,14 @@ if __name__ == "__main__":
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
     os.system('sudo killall xvfb')
-    # spawnProcess(state)
+    # spawnProcess(state)  # Uncomment this line if running on local
+
+    #Comment below line if running on local
     for i in range(0, process_count):
         p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
         p1.start()
         time.sleep(5)
-
-    # window = Tk()
-    # window.title("Welcome to Zillow Scraper")
-    # window.geometry('350x200')
-    # lbl = Label(window, text="Enter Zipcode")
-    # txt = Entry(window, width=10)
-    # txt.grid(column=1, row=0)
-    # def clicked():
-    #     findLocation2(txt.get())
-    #     window.destroy()
-    # btn = Button(window, text="Start Scraping",command=clicked)
-    # btn.grid(column=1, row=1)
-    # lbl.grid(column=0, row=0)
-    # window.mainloop()
+    ########################################
 
 # zillow url parameters:- /0_mmm - show only for sale items
 # https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/

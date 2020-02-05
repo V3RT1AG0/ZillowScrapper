@@ -199,7 +199,7 @@ def get_csv_file_for(array_of_state_code):
 # get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
 # get_csv_file_for(["NC"])
 # get_csv_file_for(["MA", "SC", "TN", "AK", "NH", "WI", "GA", "NJ"])
-get_csv_file_for(["NM", "WV", "ID", "NE", "AR", "NM", "KS", "MS", "OK"])
+# get_csv_file_for(["NM", "WV", "ID", "NE", "AR", "NM", "KS", "MS", "OK"])
 
 # getSaleandRentCsvFor("VA")
 
