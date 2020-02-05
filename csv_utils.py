@@ -112,7 +112,7 @@ def write_multi_data_to_csv(filename, data):
                           "SaleHistory", "Saves", "DaysOnZillow", '']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            modData = list(map(mapper,data))
+            modData = list(map(mapper, data))
             writer.writerows(modData)
     except IOError:
         print("I/O error")
@@ -143,28 +143,30 @@ def remove_rent_entries_from(filename, destFilename):
 def fixIncorrectFieldNames():
     collection = get_collection()
     collection.update_many({}, {"$rename":
-                                   {"cost/rent": "Price", "Year built:": "YearBuilt",
-                                    "Price/sqft": "Price_PerSQFT",
-                                    "Date available": "Date_available", "HOA": "HOAFee"
-                                    }})
+                                    {"cost/rent": "Price", "Year built:": "YearBuilt",
+                                     "Price/sqft": "Price_PerSQFT",
+                                     "Date available": "Date_available", "HOA": "HOAFee"
+                                     }})
     collection.update_many({}, {"$rename":
-                                   {"Date available:": "Date_available", "Year Built": "YearBuilt",
-                                    "Deposit & fees:": "Deposit_fees",
-                                    "Price/sqft:": "Price_PerSQFT", "Type:": "Type","HOA:": "HOAFee"
-                                    }})
+                                    {"Date available:": "Date_available", "Year Built": "YearBuilt",
+                                     "Deposit & fees:": "Deposit_fees",
+                                     "Price/sqft:": "Price_PerSQFT", "Type:": "Type",
+                                     "HOA:": "HOAFee"
+                                     }})
     collection.update_many({}, {"$rename":
-                                   {"zip": "ZipCode", "state": "State", "latitude:": "Latitude",
-                                    "longitude": "Longitude", "cost_rent": "Price",
-                                    "status": "Status",
-                                    "address": "Address", "bed": "Bedrooms", "bath": "Bathrooms",
-                                    "area": "AreaSpace_SQFT", "zestimate": "ZestimatePrice",
-                                    "Year_built": "YearBuilt", "Lot:": "Lot", "Cooling:": "Cooling",
-                                    "Parking:": "Parking", "Heating:": "Heating",
-                                    "Price_sqft": "Price_PerSQFT",
-                                    "Pets:": "Pets", "Laundry:": "Laundry",
-                                    "HOA": "HOAFee", "Deposit & fees": "Deposit_fees",
-                                    "Days on Zillow": "DaysOnZillow"
-                                    }})
+                                    {"zip": "ZipCode", "state": "State", "latitude:": "Latitude",
+                                     "longitude": "Longitude", "cost_rent": "Price",
+                                     "status": "Status",
+                                     "address": "Address", "bed": "Bedrooms", "bath": "Bathrooms",
+                                     "area": "AreaSpace_SQFT", "zestimate": "ZestimatePrice",
+                                     "Year_built": "YearBuilt", "Lot:": "Lot",
+                                     "Cooling:": "Cooling",
+                                     "Parking:": "Parking", "Heating:": "Heating",
+                                     "Price_sqft": "Price_PerSQFT",
+                                     "Pets:": "Pets", "Laundry:": "Laundry",
+                                     "HOA": "HOAFee", "Deposit & fees": "Deposit_fees",
+                                     "Days on Zillow": "DaysOnZillow"
+                                     }})
 
     # collection.update({"TransitScore": {"$exists": False}}, {"$set": {"TransitScore": 0}})
     # collection.update({"WalkScore": {"$exists": False}}, {"$set": {"WalkScore": 0}})
@@ -185,19 +187,21 @@ def getSaleandRentCsvFor(state):
     genrate_historical_data_for(state)
     remove_rent_entries_from(state + "_history.csv", state + "_history_without_rent.csv")
 
+
 def get_csv_file_for(array_of_state_code):
     fixIncorrectFieldNames()
     for state in array_of_state_code:
         getSaleandRentCsvFor(state)
-        print("Done for state - "+state)
+        print("Done for state - " + state)
+
 
 # get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
 # get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
 # get_csv_file_for(["NC"])
+# get_csv_file_for(["MA", "SC", "TN", "AK", "NH", "WI", "GA", "NJ"])
+get_csv_file_for(["NM", "WV", "ID", "NE", "AR", "NM", "KS", "MS", "OK"])
 
 # getSaleandRentCsvFor("VA")
-
-
 
 
 # combineCSV()
