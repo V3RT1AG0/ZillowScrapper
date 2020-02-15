@@ -18,8 +18,8 @@ import multiprocessing
 from pyvirtualdisplay import Display
 
 ##Comment out this line if running on local machine##
-display = Display(visible=0, size=(1366, 768))
-display.start()
+# display = Display(visible=0, size=(1366, 768))
+# display.start()
 #####################################################
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
@@ -199,6 +199,7 @@ class App:
             pass
 
         # WRITING TO CSV FILE
+        # print(returndata)
         self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
@@ -276,6 +277,7 @@ class App:
 
         # WRITING TO CSV FILE
         # print(returndata)
+        # print(returndata)
         self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
@@ -320,6 +322,7 @@ class App:
         # print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["Longitude"], returndata["Latitude"]]}
+
 
         print("Fetching..." + houseurl)
 
@@ -420,7 +423,7 @@ class App:
         # get webpage and create soup
         with requests.Session() as s:
             url = "https://www.zillow.com/homes/" + str(
-                zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/"
+                zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/"
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
@@ -474,7 +477,7 @@ class App:
             # make a request for that particular page and create soup for that page
             with requests.Session() as s:
                 url = "https://www.zillow.com/homes/" + str(
-                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/" + str(page) + "_p"
+                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/" + str(page) + "_p"
                 print(url)
                 try:
                     r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
@@ -527,15 +530,17 @@ if __name__ == "__main__":
     os.system('sudo killall chrome')
     os.system('sudo killall chromedriver')
     os.system('sudo killall xvfb')
-    # spawnProcess(state)  # Uncomment this line if running on local
+    spawnProcess(state)  # Uncomment this line if running on local
 
     #Comment below line if running on local
-    for i in range(0, process_count):
-        p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
-        p1.start()
-        time.sleep(5)
+    # for i in range(0, process_count):
+    #     p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
+    #     p1.start()
+    #     time.sleep(5)
     ########################################
 
 # zillow url parameters:- /0_mmm - show only for sale items
 # https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/
 # 1_fr,1_rs,11_zm
+# any_days/30_days/...
+
