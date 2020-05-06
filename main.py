@@ -17,14 +17,13 @@ import multiprocessing
 
 from pyvirtualdisplay import Display
 
-##Comment out this line if running on local machine##
+##Comment this line if running on local machine##
 # display = Display(visible=0, size=(1366, 768))
 # display.start()
 #####################################################
 
 proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
 logger = logging.getLogger("Zillow Logger:")
-
 
 def returnString(data):
     if data is None:
@@ -65,6 +64,7 @@ class App:
         self.driver = self.setSeleniumDriver()
         self.mongo_client = mongo()
 
+        #Get first zipcode within a particular state code
         zipcode = self.get_zip_codes(state)[0]
         while zipcode is not None:
             self.current_zipcode = str(zipcode)
@@ -73,14 +73,13 @@ class App:
             try:
                 self.find_articles_by_zip(str(zipcode))  # 22312
             except KeyboardInterrupt:
-                # Remove the zipcode from visited zipcode list in case of keyboard interupt
+                # Remove the zipcode from visited
                 print("KeyBoardInterupt. Removing zipcode..")
                 remove_zip_code(state, zipcode)
-                # self.driver.close()
                 return
             except Exception as e:
                 # In case of any other exception remove the zipcode and then throw the exception again
-                print("caught in second level exception handler")
+                print("caught in top level exception handler")
                 remove_zip_code(state, zipcode)
                 print(traceback.format_exc())
                 # self.driver.close()
@@ -138,70 +137,15 @@ class App:
         options.add_argument("--window-size=1366, 768")
         options.add_argument('--no-sandbox')
 
-        ############ Experimental parameters
-        # options.add_argument('--headless')
-        # options.add_argument('--disable-gpu')
-        # options.add_argument("start-maximized")
-        # options.add_argument("disable-infobars")
-        # options.add_argument("--disable-extensions")
-        ###########
-
         options.add_experimental_option("prefs", {
             "profile.managed_default_content_settings.images": 2})  # 'disk-cache-size': 4096
         # TODO zipcode and abouve optimization and that error in bottom
 
         # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
-        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver_', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
-
-    def scrapeForSold(self, soup2, returndata):
-        returndata["Price"] = return_number(soup2.find("div", {"class": "status"}))
-        returndata["Status"] = "Sold"
-        returndata["Address"] = returnString(soup2.find("h1", {"class": "zsg-h1"}))
-        # finding all spans which gives bed bath and area
-        bed_bath_area = soup2.find("h3", {"class": "edit-facts-light"}).findAll("span",
-                                                                                {"class": False})
-
-        # assigning each value in a list to a its corresponding varaible
-        returndata["Bedrooms"], returndata["Bathrooms"], returndata["AreaSpace_SQFT"] = [return_number(span) for span in
-                                                                     bed_bath_area]
-
-        # returndata["summary"] = returnString(soup2.find("div", {"class": "zsg-content-item home-description"}))
-        returndata["ZestimatePrice"] = return_number(
-            soup2.find("div", {"class": "zestimate primary-quote"}))
-        # returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
-
-        facts = soup2.find("div", {"class": "home-facts-at-a-glance-section"}).find_all("div")
-        for fact in facts:
-            label = returnString(fact.find("div", {"class": "fact-label"}))
-            value = returnString(fact.find("div", {"class": "fact-value"}))
-            returndata[label] = value
-
-        # GET HISTORICAL DATA
-        try:
-            price_history = soup2.find("table",
-                                       {"class": "zsg-table zsg-content-component"}).find_all(
-                "tr")
-            historyList = []
-            for hs in price_history[1:]:
-                hist = dict()
-                items = hs.contents
-                hist["date"] = returnString(items[0])
-                hist["event"] = returnString(items[1])
-                hist["price"] = returnString(items[2])
-                historyList.append(hist)
-            returndata["SaleHistory"] = historyList
-        except Exception as e:
-            logger.error("exception " + repr(e) + "in scrape for history for sold ")
-            returndata["SaleHistory"] = ""
-            pass
-
-        # WRITING TO CSV FILE
-        # print(returndata)
-        self.mongo_client.insert_article_without_upsert(returndata)
-        # write_to_csv(returndata)
 
     def scrapeForSale(self, soup2, returndata):
         returndata["Price"] = returnInteger(soup2.find("span", {"class": "ds-value"}))
@@ -222,7 +166,7 @@ class App:
             print("unable to fetch walk/trasit score")
             logger.error(repr(e))
             pass
-        # print(bed_bath_area)
+
         # assigning each value in a list to a its corresponding varaible
         returndata["Bedrooms"], returndata["Bathrooms"], returndata["AreaSpace_SQFT"] = [
                                                                                             return_number(
@@ -231,8 +175,7 @@ class App:
                                                                                             in
                                                                                             bed_bath_area][
                                                                                         :3]
-        # returndata["summary"] = returnString(soup2.find("div", {"class": "character-count-text-fold-container"}))
-        # returndata["zestimate"] = return_number(soup2.find("h4", {"class": "zestimate-value"}))
+
         returndata["ZestimatePrice"] = return_number(
             soup2.find("span", {"class": "ds-estimate-value"}))
 
@@ -256,12 +199,16 @@ class App:
             pass
 
         # SAVE HISTORICAL DATA
+        # TODO HISTORICAL DATA FETCHING
+
         try:
-            price_history = soup2.find("table", {
-                "class": "zsg-table ds-price-and-tax-section-table"}).find_all(
-                "tr")
+            price_history = soup2.find("div", string="Price history").find_next('div').find_all("tr")
+            # price_history = soup2.find("table", {
+            #     "class": "zsg-table ds-price-and-tax-section-table"}).find_all(
+            #     "tr")
+
             historyList = []
-            for hs in price_history[1:]:
+            for hs in price_history[1::2]:
                 hist = dict()
                 items = hs.contents
                 hist["date"] = returnString(items[0])
@@ -275,9 +222,29 @@ class App:
             returndata["SaleHistory"] = ""
             pass
 
+
+        # try:
+        #     price_history = soup2.find("table", {
+        #         "class": "zsg-table ds-price-and-tax-section-table"}).find_all(
+        #         "tr")
+        #     historyList = []
+        #     for hs in price_history[1:]:
+        #         hist = dict()
+        #         items = hs.contents
+        #         hist["date"] = returnString(items[0])
+        #         hist["event"] = returnString(items[1])
+        #         hist["price"] = returnString(items[2])
+        #         historyList.append(hist)
+        #     returndata["SaleHistory"] = historyList
+        # except Exception as e:
+        #     print(soup2.prettify())
+        #     logger.error("exception " + repr(e) + "in scrape for history for sale/rent ")
+        #     returndata["SaleHistory"] = ""
+        #     pass
+
         # WRITING TO CSV FILE
         # print(returndata)
-        # print(returndata)
+        print(returndata)
         self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
@@ -285,7 +252,7 @@ class App:
         returndata = dict()
 
         # use selenium to load individual house article
-        # print(str(type))
+        print(str(type))
         if type == 1:
             # data is obtained from result directly
             try:
@@ -295,7 +262,7 @@ class App:
                 houseurl = "https://www.zillow.com/homes/for_sale/" + result['id'][5:] + "_zpid"
                 returndata["zid"] = result['id'][5:]
             except Exception as e:
-                logger.error("exception " + repr(e) + " on line 248")
+                logger.error("exception fetching card 1" + repr(e))
                 return
             returndata["Latitude"] = float(result["data-latitude"]) / 1000000
             returndata["Longitude"] = float(result["data-longitude"]) / 1000000
@@ -310,7 +277,7 @@ class App:
                                                                       5:] + "_zpid"
                 returndata["zid"] = result.article['id'][5:]
             except Exception as e:
-                logger.error("exception " + repr(e) + " on line 257")
+                logger.error("exception fetching card 2" + repr(e))
                 return
             returndata["Latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["Longitude"] = json.loads(returnString(result.script))['geo']['longitude']
@@ -356,34 +323,35 @@ class App:
 
         try:
             if soup2.find("span", {"class": "ds-status-details"}) is None:
-                WebDriverWait(self.driver, 20).until(
-                    EC.presence_of_element_located((By.ID, "price-and-tax-history")))
-                self.driver.find_element_by_id("price-and-tax-history").click()
-                WebDriverWait(self.driver, 20).until(
-                    EC.presence_of_element_located(
-                        (By.ID, "hdp-price-history")))  # handle timeoutexceptio 100seconds
-                html = self.driver.page_source
-                soup2 = BeautifulSoup(html, 'lxml')
+                # TODO HISTORICAL DATA FETCHING
+                # WebDriverWait(self.driver, 20).until(
+                #     EC.presence_of_element_located((By.ID, "price-and-tax-history")))
+                # self.driver.find_element_by_id("price-and-tax-history").click()
+                # WebDriverWait(self.driver, 20).until(
+                #     EC.presence_of_element_located(
+                #         (By.ID, "hdp-price-history")))  # handle timeoutexceptio 100seconds
+                # html = self.driver.page_source
+                # soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSold(soup2, returndata)
             else:
-
-                WebDriverWait(self.driver, 25).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
-                WebDriverWait(self.driver, 25).until(
-                    EC.presence_of_element_located(
-                        (By.CLASS_NAME, "ds-price-and-tax-section-table")))
-                try:
-                    if not len(self.driver.find_elements_by_class_name("ws-value")) > 0:
-                        element = self.driver.find_element_by_link_text("See more neighborhood details")
-                        self.driver.execute_script("arguments[0].scrollIntoView();", element)
-                        WebDriverWait(self.driver, 7).until(
-                            EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
-                        element.click();
-                    WebDriverWait(self.driver, 7).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
-                except Exception as e:
-                    logger.error(repr(e))
-                    pass
+                # TODO HISTORICAL DATA FETCHING
+                # WebDriverWait(self.driver, 25).until(
+                #     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
+                # WebDriverWait(self.driver, 25).until(
+                #     EC.presence_of_element_located(
+                #         (By.CLASS_NAME, "ds-price-and-tax-section-table")))
+                # try:
+                #     if not len(self.driver.find_elements_by_class_name("ws-value")) > 0:
+                #         element = self.driver.find_element_by_link_text("See more neighborhood details")
+                #         self.driver.execute_script("arguments[0].scrollIntoView();", element)
+                #         WebDriverWait(self.driver, 7).until(
+                #             EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
+                #         element.click();
+                #     WebDriverWait(self.driver, 7).until(
+                #         EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
+                # except Exception as e:
+                #     logger.error(repr(e))
+                #     pass
                 # HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
                 # SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
                 html = self.driver.page_source
@@ -427,13 +395,7 @@ class App:
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
-            # r = s.get(url, headers=self.req_headers)
-            # self.driver.get("http://www.showmemyip.com/")
-            # self.pxy = "183.87.12.209:8080"
-            # os.environ['http_proxy'] = self.pxy
-            # os.environ['HTTP_PROXY'] = self.pxy
-            # os.environ['https_proxy'] = self.pxy
-            # os.environ['HTTPS_PROXY'] = self.pxy
+
             try:
                 r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
             except Exception as e:
@@ -448,19 +410,12 @@ class App:
             self.handle_fetch_cards_exception()
             self.find_articles_by_zip(zip)
             return
-        # print(soup.prettify())
 
-        # print("Current process: " + multiprocessing.current_process().name + " " + returnString(
-        #     soup.find("title")))
-
-        # if re.search('\\b0 Homes\\b', returnString(soup.find("title"))) is not None:
-        #     return
+        # print(soup.find("meta", {"name": "description"}))
         if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None:
             print("no results for zip " + zip)
             return
-        # if returnString(soup.find("span", {"class": "result-count"})) == "No Results":
-        #     print("no results for "+zip)
-        #     return
+
 
         # get number of pages
         try:
@@ -505,8 +460,6 @@ class App:
                 card_type = 0
 
             # find number of articles in that page and iterate over it
-
-            # print(results)
             for result in results:
                 try:
                     self.scrapeArticle(result, card_type)
@@ -527,9 +480,9 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
-    os.system('sudo killall chrome')
-    os.system('sudo killall chromedriver')
-    os.system('sudo killall xvfb')
+    # os.system('sudo killall chrome')
+    # os.system('sudo killall chromedriver')
+    # os.system('sudo killall xvfb')
     spawnProcess(state)  # Uncomment this line if running on local
 
     #Comment below line if running on local
