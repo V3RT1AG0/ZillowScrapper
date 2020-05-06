@@ -142,7 +142,7 @@ class App:
         # TODO zipcode and abouve optimization and that error in bottom
 
         # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
-        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver_', options=options)
+        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -480,9 +480,11 @@ def spawnProcess(state):
 if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
+    # Comment below line if running on local
     # os.system('sudo killall chrome')
     # os.system('sudo killall chromedriver')
     # os.system('sudo killall xvfb')
+    ########################################
     spawnProcess(state)  # Uncomment this line if running on local
 
     #Comment below line if running on local
