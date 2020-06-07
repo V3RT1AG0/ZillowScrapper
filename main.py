@@ -1,3 +1,4 @@
+import math
 import traceback
 from bs4 import BeautifulSoup
 import requests
@@ -22,8 +23,10 @@ from pyvirtualdisplay import Display
 # display.start()
 #####################################################
 
-proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
+# proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
+proxyKey = "B7fx3zoM6qTUtchpQH8PFSAXuwG2DRVe"
 logger = logging.getLogger("Zillow Logger:")
+
 
 def returnString(data):
     if data is None:
@@ -40,6 +43,7 @@ def string_to_int(string):
         print(e)
     return result
 
+
 def returnInteger(data):
     string = returnString(data)
     if string == "":
@@ -54,7 +58,8 @@ def return_number(data):
     else:
         return re.sub('[^0-9]', '', returnString(data))
 
-#Scrapper code start
+
+# Scrapper code start
 class App:
 
     def __init__(self, state):
@@ -62,9 +67,9 @@ class App:
         self.req_headers = self.setHeaders()
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
-        self.mongo_client = mongo()
+        # self.mongo_client = mongo()
 
-        #Get first zipcode within a particular state code
+        # Get first zipcode within a particular state code
         zipcode = self.get_zip_codes(state)[0]
         while zipcode is not None:
             self.current_zipcode = str(zipcode)
@@ -88,7 +93,6 @@ class App:
             # get next zipcode for that particular state
             zipcode = self.get_zip_codes(state)[0]
         self.driver.close()
-
 
     def get_zip_codes(self, state):
         zipcodes = get_unvisited_zip(state)
@@ -142,7 +146,7 @@ class App:
         # TODO zipcode and abouve optimization and that error in bottom
 
         # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
-        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -176,6 +180,9 @@ class App:
                                                                                             bed_bath_area][
                                                                                         :3]
 
+        if int(returndata["Bathrooms"]) > 10:
+            returndata["Bathrooms"] = math.ceil(int(returndata["Bathrooms"])/10)
+
         returndata["ZestimatePrice"] = return_number(
             soup2.find("span", {"class": "ds-estimate-value"}))
 
@@ -202,7 +209,8 @@ class App:
         # TODO HISTORICAL DATA FETCHING
 
         try:
-            price_history = soup2.find("div", string="Price history").find_next('div').find_all("tr")
+            price_history = soup2.find("div", string="Price history").find_next('div').find_all(
+                "tr")
             # price_history = soup2.find("table", {
             #     "class": "zsg-table ds-price-and-tax-section-table"}).find_all(
             #     "tr")
@@ -221,7 +229,6 @@ class App:
             logger.error("exception " + repr(e) + "in scrape for history for sale/rent ")
             returndata["SaleHistory"] = ""
             pass
-
 
         # try:
         #     price_history = soup2.find("table", {
@@ -245,7 +252,7 @@ class App:
         # WRITING TO CSV FILE
         # print(returndata)
         print(returndata)
-        self.mongo_client.insert_article_without_upsert(returndata)
+        # self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
@@ -282,14 +289,13 @@ class App:
             returndata["Latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["Longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
-        if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
-            print("zid: " + returndata["zid"] + " already exist in db")
-            return
+        # if self.mongo_client.check_if_zid_already_exist(returndata["zid"]) is not None:
+        #     print("zid: " + returndata["zid"] + " already exist in db")
+        #     return
 
         # print(str(returndata["longitude"]) + " / " + str(returndata["latitude"]))
         returndata["location"] = {"type": "Point",
                                   "coordinates": [returndata["Longitude"], returndata["Latitude"]]}
-
 
         print("Fetching..." + houseurl)
 
@@ -416,7 +422,6 @@ class App:
             print("no results for zip " + zip)
             return
 
-
         # get number of pages
         try:
             pages = returnString(soup.find("li", {"class", "zsg-pagination-next"}).previous_sibling)
@@ -432,7 +437,8 @@ class App:
             # make a request for that particular page and create soup for that page
             with requests.Session() as s:
                 url = "https://www.zillow.com/homes/" + str(
-                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/" + str(page) + "_p"
+                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/" + str(
+                    page) + "_p"
                 print(url)
                 try:
                     r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)
@@ -487,7 +493,7 @@ if __name__ == "__main__":
     ########################################
     spawnProcess(state)  # Uncomment this line if running on local
 
-    #Comment below line if running on local
+    # Comment below line if running on local
     # for i in range(0, process_count):
     #     p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
     #     p1.start()
@@ -498,4 +504,3 @@ if __name__ == "__main__":
 # https://www.zillow.com/homes/for_sale/Washington-DC-20002/house,apartment_duplex_type/66126_rid/38.953802,-76.915885,38.861765,-77.039481_rect/12_zm/
 # 1_fr,1_rs,11_zm
 # any_days/30_days/...
-

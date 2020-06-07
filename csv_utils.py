@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import csv
 import json
@@ -139,6 +141,21 @@ def remove_rent_entries_from(filename, destFilename):
     remainder = df.drop(result + indexes)
     remainder.to_csv("./" + destFilename)
 
+def fixBedroomsCount():
+    collection = get_collection()
+    for document in collection.find({"Bathrooms": {"$gt": 10}}, no_cursor_timeout=True):
+        _id = document["_id"]
+        count = document["Bathrooms"]
+        new_count = int(math.ceil((count / 10)))
+        get_collection().update_one({
+            '_id': _id
+        }, {
+            '$set': {
+                'Bathrooms': new_count,
+            }
+        }, upsert=False)
+    print("done")
+
 
 def fixIncorrectFieldNames():
     collection = get_collection()
@@ -194,6 +211,9 @@ def get_csv_file_for(array_of_state_code):
         getSaleandRentCsvFor(state)
         print("Done for state - " + state)
 
+
+# if __name__ == '__main__':
+#     fixBedroomsCount()
 
 # get_csv_file_for(["VA","CA","TX","MD","NY","AZ"])
 # get_csv_file_for(["FL","PA","OH","MI","DE","MT"])
