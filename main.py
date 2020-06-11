@@ -19,8 +19,8 @@ import multiprocessing
 from pyvirtualdisplay import Display
 
 ##Comment this line if running on local machine##
-# display = Display(visible=0, size=(1366, 768))
-# display.start()
+display = Display(visible=0, size=(1366, 768))
+display.start()
 #####################################################
 
 # proxyKey = 'XZApcdn3rvxztE9KQeuJgLyomYw7V5DT'
@@ -67,7 +67,7 @@ class App:
         self.req_headers = self.setHeaders()
         self.handle_fetch_cards_exception()
         self.driver = self.setSeleniumDriver()
-        # self.mongo_client = mongo()
+        self.mongo_client = mongo()
 
         # Get first zipcode within a particular state code
         zipcode = self.get_zip_codes(state)[0]
@@ -146,7 +146,7 @@ class App:
         # TODO zipcode and abouve optimization and that error in bottom
 
         # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
-        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver', options=options)
+        driver = webdriver.Chrome(executable_path='./chromedriver', options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -155,6 +155,8 @@ class App:
         returndata["Price"] = returnInteger(soup2.find("span", {"class": "ds-value"}))
         returndata["Status"] = returnString(soup2.find("span", {"class": "ds-status-details"}))
         returndata["Address"] = returnString(soup2.find("h1", {"class": "ds-address-container"}))
+        returndata["Description"] = returnString(
+            soup2.find("div", {"class": "ds-overview-section"}).find("div", recursive=False))
         address = returndata["Address"].split()
         returndata["ZipCode"] = address[-1]
         returndata["State"] = address[-2]
@@ -181,7 +183,7 @@ class App:
                                                                                         :3]
 
         if int(returndata["Bathrooms"]) > 10:
-            returndata["Bathrooms"] = math.ceil(int(returndata["Bathrooms"])/10)
+            returndata["Bathrooms"] = math.ceil(int(returndata["Bathrooms"]) / 10)
 
         returndata["ZestimatePrice"] = return_number(
             soup2.find("span", {"class": "ds-estimate-value"}))
@@ -225,7 +227,7 @@ class App:
                 historyList.append(hist)
             returndata["SaleHistory"] = historyList
         except Exception as e:
-            print(soup2.prettify())
+            # print(soup2.prettify())
             logger.error("exception " + repr(e) + "in scrape for history for sale/rent ")
             returndata["SaleHistory"] = ""
             pass
@@ -251,15 +253,15 @@ class App:
 
         # WRITING TO CSV FILE
         # print(returndata)
-        print(returndata)
-        # self.mongo_client.insert_article_without_upsert(returndata)
+        # print(returndata)
+        self.mongo_client.insert_article_without_upsert(returndata)
         # write_to_csv(returndata)
 
     def scrapeArticle(self, result, type, retry=0):
         returndata = dict()
 
         # use selenium to load individual house article
-        print(str(type))
+        # print(str(type))
         if type == 1:
             # data is obtained from result directly
             try:
@@ -487,17 +489,17 @@ if __name__ == "__main__":
     state = input("Enter State Code:")
     process_count = int(input("How many process would you like to spawn in parallel:"))
     # Comment below line if running on local
-    # os.system('sudo killall chrome')
-    # os.system('sudo killall chromedriver')
-    # os.system('sudo killall xvfb')
+    os.system('sudo killall chrome')
+    os.system('sudo killall chromedriver')
+    os.system('sudo killall xvfb')
     ########################################
     spawnProcess(state)  # Uncomment this line if running on local
 
     # Comment below line if running on local
-    # for i in range(0, process_count):
-    #     p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
-    #     p1.start()
-    #     time.sleep(5)
+    for i in range(0, process_count):
+        p1 = multiprocessing.Process(target=spawnProcess, args=(state,))
+        p1.start()
+        time.sleep(5)
     ########################################
 
 # zillow url parameters:- /0_mmm - show only for sale items
