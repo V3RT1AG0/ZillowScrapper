@@ -76,7 +76,8 @@ class App:
             self.current_state = state
             write_visited_zip_code(state, zipcode)
             try:
-                self.find_articles_by_zip(str(zipcode))  # 22312
+                self.find_articles_by_zip(str(zipcode), "for_rent")
+                self.find_articles_by_zip(str(zipcode), "for_sale")  # 22312
             except KeyboardInterrupt:
                 # Remove the zipcode from visited
                 print("KeyBoardInterupt. Removing zipcode..")
@@ -146,7 +147,8 @@ class App:
         # TODO zipcode and abouve optimization and that error in bottom
 
         # Change the executable path to chrome before running. Also make sure it matches the chrome version installed on the OS
-        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver__', options=options)
+        driver = webdriver.Chrome(executable_path='./MongoDumpBackup/chromedriver__',
+                                  options=options)
         # /usr/local/bin/chromedriver
         driver.set_page_load_timeout(100)
         return driver
@@ -187,7 +189,6 @@ class App:
 
         returndata["ZestimatePrice"] = return_number(
             soup2.find("div", {"id": "ds-home-values"}).find("p"))
-
 
         # returndata["Principal/Interest"] = returnString(soup2.find("span", text='Principal & interest').next_sibling)
         facts = soup2.find("ul", {"class": "ds-home-fact-list"}).find_all("li")
@@ -331,38 +332,7 @@ class App:
             return
 
         try:
-            if soup2.find("span", {"class": "ds-status-details"}) is None:
-                # TODO HISTORICAL DATA FETCHING
-                # WebDriverWait(self.driver, 20).until(
-                #     EC.presence_of_element_located((By.ID, "price-and-tax-history")))
-                # self.driver.find_element_by_id("price-and-tax-history").click()
-                # WebDriverWait(self.driver, 20).until(
-                #     EC.presence_of_element_located(
-                #         (By.ID, "hdp-price-history")))  # handle timeoutexceptio 100seconds
-                # html = self.driver.page_source
-                # soup2 = BeautifulSoup(html, 'lxml')
-                self.scrapeForSold(soup2, returndata)
-            else:
-                # TODO HISTORICAL DATA FETCHING
-                # WebDriverWait(self.driver, 25).until(
-                #     EC.presence_of_element_located((By.CLASS_NAME, "ds-value")))
-                # WebDriverWait(self.driver, 25).until(
-                #     EC.presence_of_element_located(
-                #         (By.CLASS_NAME, "ds-price-and-tax-section-table")))
-                # try:
-                #     if not len(self.driver.find_elements_by_class_name("ws-value")) > 0:
-                #         element = self.driver.find_element_by_link_text("See more neighborhood details")
-                #         self.driver.execute_script("arguments[0].scrollIntoView();", element)
-                #         WebDriverWait(self.driver, 7).until(
-                #             EC.element_to_be_clickable((By.LINK_TEXT, "See more neighborhood details")))
-                #         element.click();
-                #     WebDriverWait(self.driver, 7).until(
-                #         EC.presence_of_element_located((By.CLASS_NAME, "ws-value")))
-                # except Exception as e:
-                #     logger.error(repr(e))
-                #     pass
-                # HERE THE ACTUAL CLASS IS "zsg-table ds-price-and-tax-section-table" BUT I FEEL THAT
-                # SELENIUM IS UNABLE TO DETECT BOTH THE CLASSES TOGETHER HENCE WAITING FOR SINGLE CLASS HERE
+            if soup2.find("span", {"class": "ds-status-details"}) is not None:
                 html = self.driver.page_source
                 soup2 = BeautifulSoup(html, 'lxml')
                 self.scrapeForSale(soup2, returndata)
@@ -396,11 +366,13 @@ class App:
             "https": "http://" + self.cards_proxy
         }
 
-    def find_articles_by_zip(self, zip):
+    def find_articles_by_zip(self, zip, status):
         # get webpage and create soup
         with requests.Session() as s:
-            url = "https://www.zillow.com/homes/" + str(
-                zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/"
+            url = "https://www.zillow.com/homes/" + status + "/" + str(
+                zip) + "_rb/house,townhouse,condo_type/30_days/"
+            # url = "https://www.zillow.com/homes/" + str(
+            #     zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/"
             # url = 'https://www.zillow.com/homes/recently_sold/' + str(zip) + "_rb"
             # https://www.zillow.com/homes/for_sale/20002_rb/house_type/66126_rid/1_fr/1_rs/1_fs/0_mmm/
             # url = 'https://www.zillow.com/homes/for_sale/' + str(zip) + "_rb"
@@ -410,14 +382,14 @@ class App:
             except Exception as e:
                 print(str(e))
                 self.handle_fetch_cards_exception()
-                self.find_articles_by_zip(zip)
+                self.find_articles_by_zip(zip, status)
                 return
 
         # print(r.text)
         soup = BeautifulSoup(r.text, 'lxml')
         if self.check_recaptcha(soup):
             self.handle_fetch_cards_exception()
-            self.find_articles_by_zip(zip)
+            self.find_articles_by_zip(zip, status)
             return
 
         # print(soup.find("meta", {"name": "description"}))
@@ -439,9 +411,12 @@ class App:
 
             # make a request for that particular page and create soup for that page
             with requests.Session() as s:
-                url = "https://www.zillow.com/homes/" + str(
-                    zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/" + str(
+                url = "https://www.zillow.com/homes/" + status + "/" + str(
+                    zip) + "_rb/house,townhouse,condo_type/30_days/" + str(
                     page) + "_p"
+                # url = "https://www.zillow.com/homes/" + str(
+                #     zip) + "_rb/house,townhouse,condo_type/0_rs/1_fs/1_fr/0_mmm/30_days/" + str(
+                #     page) + "_p"
                 print(url)
                 try:
                     r = s.get(url, proxies=self.proxyDict, timeout=20.0, headers=self.req_headers)

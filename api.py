@@ -1,3 +1,5 @@
+from math import ceil
+
 from bs4 import BeautifulSoup
 import requests
 import csv
@@ -71,6 +73,10 @@ def findLocation(location, state):
     results = soup.find_all("result")
     for result in results:
         print(crawl(returnString(result.find('zpid'))))
+
+
+if __name__ == '__main__':
+    print(ceil(2.5))
 
 
 # CODE TO FETCH DATA USING API INSTEAD OF SCRAPING IT FROM WEBSITE
