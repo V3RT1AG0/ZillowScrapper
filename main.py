@@ -234,24 +234,7 @@ class App:
             returndata["SaleHistory"] = ""
             pass
 
-        # try:
-        #     price_history = soup2.find("table", {
-        #         "class": "zsg-table ds-price-and-tax-section-table"}).find_all(
-        #         "tr")
-        #     historyList = []
-        #     for hs in price_history[1:]:
-        #         hist = dict()
-        #         items = hs.contents
-        #         hist["date"] = returnString(items[0])
-        #         hist["event"] = returnString(items[1])
-        #         hist["price"] = returnString(items[2])
-        #         historyList.append(hist)
-        #     returndata["SaleHistory"] = historyList
-        # except Exception as e:
-        #     print(soup2.prettify())
-        #     logger.error("exception " + repr(e) + "in scrape for history for sale/rent ")
-        #     returndata["SaleHistory"] = ""
-        #     pass
+
 
         # WRITING TO CSV FILE
         # print(returndata)
@@ -290,6 +273,7 @@ class App:
             except Exception as e:
                 logger.error("exception fetching card 2" + repr(e))
                 return
+            print(result)
             returndata["Latitude"] = json.loads(returnString(result.script))['geo']['latitude']
             returndata["Longitude"] = json.loads(returnString(result.script))['geo']['longitude']
 
@@ -393,7 +377,8 @@ class App:
             return
 
         # print(soup.find("meta", {"name": "description"}))
-        if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None:
+        if re.search('\\b0\\b', soup.find("meta", {"name": "description"})["content"]) is not None\
+                or re.search('\\b0\\b', returnString(soup.find("title"))) is not None:
             print("no results for zip " + zip)
             return
 
